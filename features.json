@@ -1,0 +1,152 @@
+[
+  {
+    "title": "Platform Support Changes",
+    "category": "platform",
+    "text": "Couchbase Server 8.0 adds support for Alma Linux 10, Debian Linux 13, macOS 15 (Sequoia, development only), Oracle Linux 10, RHEL 10, Rocky Linux 10, and Windows Server 2025. It also drops support for Amazon Linux 2, macOS 12 (Monterey), SLES 12, Ubuntu 20.04 LTS, and Windows 10/Server 2019."
+  },
+  {
+    "title": "GSI Vector Indexes",
+    "category": "features",
+    "text": "Couchbase Server 8.0 introduces Hyperscale Vector indexes and Composite Vector indexes in the Index Service, enabling vector-search workloads (e.g., for AI applications). Hyperscale supports single vector column for very large datasets; Composite supports one vector plus scalar filters for hybrid vector+scalar queries, alongside existing Search Vector indexes."
+  },
+  {
+    "title": "Storage Engine Default Change – Magma with 128 vBuckets",
+    "category": "data_service",
+    "text": "The default storage engine for new buckets in Couchbase Server 8.0 Enterprise is now Magma with 128 vBuckets; its minimum memory quota is 100 MiB (vs 1 GiB for the previous default). This is a behavior change so upgrade scripts relying on previous defaults should be reviewed."
+  },
+  {
+    "title": "Native Encryption at Rest",
+    "category": "data_service",
+    "text": "Couchbase Server Enterprise now supports native encryption at rest for bucket data, logs, audit and configuration, with support for third-party key management (e.g., AWS KMS or KMIP-compliant services). Encryption/decryption is transparent to users."
+  },
+  {
+    "title": "Filesystem Free-Space Protection",
+    "category": "data_service",
+    "text": "You can configure a threshold for the Data Service so that if the filesystem writing path reaches that threshold, Couchbase stops writing and returns an error. This helps avoid issues with full filesystems during recovery."
+  },
+  {
+    "title": "Durable Writes Available After Losing Majority",
+    "category": "data_service",
+    "text": "A new cluster-level option allows durable writes to succeed even when majority write requirements are not met (for example under some failover/upgrade scenarios). This relaxes the guarantee of durability and should only be used in special cases."
+  },
+  {
+    "title": "Configurable Warmup Behavior (Background Warmup)",
+    "category": "data_service",
+    "text": "New ‘warmupBehavior’ bucket setting replaces older threshold parameters. Options: ‘background’ (default), ‘blocking’ (original behavior) and ‘none’. The REST API now supports this and the older cbepctl warmup parameters are removed."
+  },
+  {
+    "title": "Memcached Buckets Removed",
+    "category": "data_service",
+    "text": "Memcached-type buckets are now removed in Couchbase Server 8.0; clusters containing them must replace them (for example with ephemeral buckets) before upgrading."
+  },
+  {
+    "title": "Change Eviction Policy Without Bucket Restart",
+    "category": "data_service",
+    "text": "You can now change the eviction policy of a bucket (and of an ephemeral bucket) without restarting the bucket; for ephemeral buckets the change takes immediate effect."
+  },
+  {
+    "title": "Dynamic Service Assignment for Non-Data Services",
+    "category": "cluster_service",
+    "text": "On an existing cluster node, you can now dynamically add or remove non-data services (Index, Query, Search, Analytics, Eventing, Backup) without removing the node; the rebalancing is triggered automatically."
+  },
+  {
+    "title": "Backup Service: Retention Periods & Pruning",
+    "category": "cluster_service",
+    "text": "The Backup Service now supports a retention period for repositories, and automatic pruning of old backups when they exceed their defined lifespan; administrators can also customize deletion of backups, including dependencies from incremental backups."
+  },
+  {
+    "title": "Bucket REST API — New Data Service Settings",
+    "category": "cluster_service",
+    "text": "The Bucket REST API now supports new settings: ‘accessScannerEnabled’, ‘expiryPagerSleepTime’, ‘warmupBehavior’, ‘memoryLowWatermark’, ‘memoryHighWatermark’. Older cbepctl parameters (warmup thresholds, mem_high_wat etc.) are removed."
+  },
+  {
+    "title": "XDCR Conflict Logging & Diagnostic Utilities",
+    "category": "replication",
+    "text": "XDCR enhancements: conflict logging (records the two conflicting documents + event in a local collection when active-active replication conflicts occur), incoming replication identification (which remote clusters are sending streams), ‘xdcrDiffer’ CLI utility to compare document data across clusters, and new genericServicesLogLevel configuration via REST API."
+  },
+  {
+    "title": "Hybrid Authentication Mode & Node-to-Node Encryption",
+    "category": "security",
+    "text": "Couchbase Server 8.0 supports a ‘Hybrid’ authentication mode: clients can use either certificates or username/password credentials, while all nodes must use mutual TLS (mTLS) for inter-node communication. Also supports simultaneous certificate-based client auth and node-to-node encryption in the mandatory mode."
+  },
+  {
+    "title": "Lock/Unlock Local User Accounts & Force Password Change",
+    "category": "security",
+    "text": "Administrators can now lock local domain user accounts (which terminates active sessions) and force a password change on next login; also auditing of local user activity (last login request) is available for Enterprise Edition."
+  },
+  {
+    "title": "SQL++: New Statements for Vector Indexes",
+    "category": "query_service",
+    "text": "In SQL++ you can now CREATE, ALTER and DROP Hyperscale Vector indexes and Composite Vector indexes, specifying number of vector dimensions, distance metric, quantization and algorithms. Also support for full ALTER etc for users, groups, buckets."
+  },
+  {
+    "title": "SQL++: New Functions for Vector and Other Enhancements",
+    "category": "query_service",
+    "text": "SQL++ adds new functions: APPROX_VECTOR_DISTANCE, VECTOR_DISTANCE, ISVECTOR, DECODE_VECTOR, ENCODE_VECTOR, NORMALIZE_VECTOR for vector values. Also adds EVALUATE(), COMPRESS(), UNCOMPRESS() to handle dynamic statements & string compression."
+  },
+  {
+    "title": "SQL++: Automatic Workload Repository (AWR)",
+    "category": "query_service",
+    "text": "Automatic Workload Repository now captures query performance statistics, tracks trends, enables reporting and helps optimize queries based on historic data."
+  },
+  {
+    "title": "SQL++: Using AI to Generate Queries",
+    "category": "query_service",
+    "text": "SQL++ now supports a ‘USING AI’ clause to generate SQL++ queries from natural-language requests, e.g., ‘How many airlines are based in Europe’, enabling natural-language → query translation."
+  },
+  {
+    "title": "SQL++: Auto Update Statistics & Optimizer Hints",
+    "category": "query_service",
+    "text": "The optimizer now supports auto-update statistics (to refresh outdated stats), optimizer hints for DML (DELETE/UPDATE/MERGE) and negative keyspace hints (e.g., NO_INDEX, NO_INDEX_FTS, NO_USE_NL, NO_USE_HASH)."
+  },
+  {
+    "title": "SQL++: New System Catalog Keyspaces",
+    "category": "query_service",
+    "text": "Introduces two new system keyspaces: system:group_info and system:bucket_info to provide metadata about user groups and buckets via SQL++."
+  },
+  {
+    "title": "SQL++: Extended Attributes (XATTR) Support in Queries",
+    "category": "query_service",
+    "text": "You can now modify extended attributes (XATTRs) of documents directly via SQL++ INSERT/UPSERT/UPDATE, and include up to 15 XATTRs per query."
+  },
+  {
+    "title": "SQL++: Auto-Reprepare for Prepared Statements & Enhanced Logging",
+    "category": "query_service",
+    "text": "Prepared statements now auto-reprepare when index metadata version changes; query logging now supports logging by statement text or plan; INFER statement extended to include meta.id() attribute and new options array_sample_size, max_nesting_depth, flags."
+  },
+  {
+    "title": "Search Service: Partition Selection for Queries",
+    "category": "search_service",
+    "text": "The Search Service now supports a partition_selection property to control how query partitions are chosen for a search request."
+  },
+  {
+    "title": "Search Service: Synonym Searches",
+    "category": "search_service",
+    "text": "You can now create synonym collections/documents to support synonym search in a Search index, enabling matching of words with same meaning rather than exact terms."
+  },
+  {
+    "title": "Search Service: Custom Document Filters",
+    "category": "search_service",
+    "text": "Search indexes now allow custom document filters (instead of default type identifier) so you have more control of which documents get indexed."
+  },
+  {
+    "title": "Search Service: New Search Index Algorithm (BM25)",
+    "category": "search_service",
+    "text": "Couchbase Server 8.0 now supports the BM25 algorithm (in addition to tf-idf) for scoring search results, giving better hybrid search support and more stable ordering across index partitions."
+  },
+  {
+    "title": "Eventing Service: OnDeploy Handler",
+    "category": "eventing_service",
+    "text": "The Eventing Service introduces an OnDeploy handler which runs once when an Eventing function is deployed or resumed (before any mutations). Useful for initialization tasks such as registering a Timer or setting up resources."
+  },
+  {
+    "title": "Eventing Service: Scope-Level Configuration & Node Config",
+    "category": "eventing_service",
+    "text": "Configurations can now be defined at bucket or scope level (for example enable_curl or enable_debugger). You can also configure the number of nodes on which a function within a scope executes (num_nodes_running)."
+  },
+  {
+    "title": "Eventing Service: Curl Timeout Setting",
+    "category": "eventing_service",
+    "text": "You can now set a timeout (in seconds) for each curl request in an Eventing function; this value takes precedence over the script timeout."
+  }
+]
