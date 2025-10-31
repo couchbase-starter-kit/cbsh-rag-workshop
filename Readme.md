@@ -49,10 +49,13 @@ Verify installation:
 ```bash
 cbsh --version
 ```
+#### Step 1.2: Setup your AI API Key
 
-### Step 1.2: Get Your OpenAI API Key
+Next, you'll create an AI API Key. This key allows your applications to access LLMs APIs to generate embeddings(vector representation of your content), and to start chat conversation. Right now [Couchbase Shell is compatible with OpenAI, Gemini and Bedrocks](https://couchbase.sh/docs/#_cb_env_llm).
 
-Next, you'll create an OpenAI account and get an API key. This key allows your applications to access OpenAI's powerful language models like GPT-3.5 and GPT-4.
+#### Step 1.2.1: Get Your OpenAI API Key
+
+To Create an OpenAI Key:
 
 1. Go to https://platform.openai.com/api-keys
 2. Sign up or log in
@@ -67,6 +70,7 @@ export OPENAI_API_KEY="sk-your-key-here"
 # Windows PowerShell
 $env:OPENAI_API_KEY="sk-your-key-here"
 ```
+Keep your key around as we will also copy-paste it in Couchbase Shell's configuration later on.
 
 ### Step 1.3: Set Up Couchbase Capella Free Tier
 
@@ -107,7 +111,7 @@ In this section, you'll connect your local Couchbase Shell to your cloud databas
 
 ### Step 2.1: Couchbase Shell Initial Configuration
 
-Let's add the Couchbase Capella API Key and the OpenAI Configuration.
+Let's add the Couchbase Capella API Key and the LLM Configuration. yourOrgIdentifier can be whatever you want. It will be used later on to associate an API key with a cluster configuration. 
 
 1. open `~/.cbsh/config` and edit this file with the following content:
 
@@ -167,8 +171,7 @@ The following command allows you to register the cluster:
 
 ```nushell
 # Register your cluster
-👤  🏠 
-> ( clusters get $cluster_name | cb-env register $cluster_name $in."connection string"
+( clusters get $cluster_name | cb-env register $cluster_name $in."connection string"
   --capella-organization "yourOrgIdentifier"
   --project (projects | $in.0.name)
   --default-bucket chat_data
@@ -177,10 +180,7 @@ The following command allows you to register the cluster:
   --username workshop_user 
   --password yourPassword123!
   --save  )
-👤  🏠 
-> cb-env cluster $cluster_name
-👤 workshop_user 🏠 fixedjohncreynolds in ☁️ chat_data.workshop.knowledge_base
-> 
+cb-env cluster $cluster_name
 ```
 
 Replace:
@@ -191,8 +191,7 @@ Replace:
 With an active Project and Cluster, we can create the cluster user. 
 
 ```nushell
-👤 workshop_user 🏠 fixedjohncreynolds in ☁️ chat_data.workshop.knowledge_base
-> credentials create --read  --write --username workshop_user --password yourPassword123!
+credentials create --read  --write --username workshop_user --password yourPassword123!
 ```
 
 ### Step 2.5: Create Scope and Collection
@@ -201,7 +200,7 @@ You'll create a logical organization for your data. Think of a scope as a databa
 
 ```nushell
 # Create a bucket for our project
-buckets create chat_data
+buckets create chat_data 1024
 
 # Create a scope for our project
 scopes create --bucket chat_data workshop
@@ -222,7 +221,7 @@ Ask OpenAI a question about Couchbase and see what it knows from its training da
 
 ```nushell
 # Ask a simple question
-chat "What is Couchbase?"
+ask "What is Couchbase?"
 ```
 
 You should see a response from OpenAI!
@@ -369,7 +368,7 @@ We run the search, use the result to fetch only the text field thanks to the `su
 
 ```nushell
 # Function to search using vectors
-> vector search  knowledgebase_idx textVector $question.content.vector.0 --neighbors 10 | subdoc get text | select content | ask $question.content.text.0
+vector search  knowledgebase_idx textVector $question.content.vector.0 --neighbors 10 | subdoc get text | select content | ask $question.content.text.0
 ```
 
 The result is a precise answer to your questions thanks to the addition of relevant context using RAG.
@@ -389,7 +388,7 @@ You will create a new Couchbase Shell/Nushell function that wraps up the search 
 # RAG-enhanced chat function
 def rag-ask [question: string] {
   let vectorized_question = ( vector enrich-text $question | $in.content.vector.0 )
-  let search_results = vector search l2knowledgebase_idx textVector $vectorized_question --neighbors 10
+  let search_results = vector search knowledgebase_idx textVector $vectorized_question --neighbors 10
   let context = $search_results | subdoc get text | select content
   $context | ask $question
 }
@@ -446,11 +445,11 @@ You'll test several more questions to really see the difference. The RAG version
 
 ```nushell
 # Question about features
-chat "Tell me about Couchbase scopes and collections"
+ask "Tell me about Couchbase scopes and collections"
 rag-chat "Tell me about Couchbase scopes and collections"
 
 # Question about vector search
-chat "How does vector search work in Couchbase?"
+ask "How does vector search work in Couchbase?"
 rag-chat "How does vector search work in Couchbase?"
 ```
 
