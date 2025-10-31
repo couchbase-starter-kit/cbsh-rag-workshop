@@ -62,19 +62,23 @@ To Create an OpenAI Key:
 3. Click "Create new secret key"
 4. Copy your key (starts with `sk-`)
 
-**Set your API key:**
+**Set your OpenAI API key:**
 ```bash
 # macOS/Linux
 export OPENAI_API_KEY="sk-your-key-here"
+```
 
+```bash
 # Windows PowerShell
 $env:OPENAI_API_KEY="sk-your-key-here"
 ```
-Keep your key around as we will also copy-paste it in Couchbase Shell's configuration later on.
+> [!IMPORTANT]
+> Keep your key around as we will also copy-paste it in Couchbase Shell's configuration later on.
+
 
 ### Step 1.3: Set Up Couchbase Capella Free Tier
 
-Now you'll create a free cloud database cluster. Couchbase Capella is a fully-managed database service that will store your documents and handle vector search for RAG. The free tier is perfect for learning and small projects.
+Now you'll create a free tier cloud database cluster. Couchbase Capella is a fully-managed database service that will store your documents and handle vector search for RAG. The free tier is perfect for learning and small projects.
 
 1. Go to https://cloud.couchbase.com/sign-up
 2. Sign up for a free account
@@ -90,16 +94,20 @@ With your cluster created, you'll now set up an API Key, and configure security 
 
 Once your cluster is ready:
 
-1. **Create an API Key:**
+1. **Create an API Key on Organization Level:**
 
-    - Go to Organization Setting.
+    - Go to **Organization** Settings
     - Click on "API Keys", "Generate Key"
     - Choose a Key Name, check all Organization Roles
-    - Click on "Generate Key".
+    - Click on "Generate Key"
     - Make sure you copy the API Key and API Secret
 
-2. **Allow Your IP:**
-   - Go to "Settings" → "Allowed IP Addresses"
+> [!CAUTION]
+> **API Secret** of API Key will only be shown once you've created the API Key, hence do not forget to copy the API Secret or "Download" the whole key on the creation window.
+
+2. **Assign Allowed IP Addresses for your Cluster:**
+
+   - Go to **Cluster** "Settings" → "Allowed IP Addresses"
    - Click "Add Allowed IP"
    - Add your current IP (or use 0.0.0.0/0 for testing)
 
@@ -143,7 +151,12 @@ cbsh
 
 You should see the Couchbase Shell prompt:
 ```
+# MacOS/Linux
 👤 🏠
+>
+```
+```
+# Windows PowerShell
 >
 ```
 
@@ -161,11 +174,18 @@ projects | cb-env project $in.0.name
 ---
 __⚠ Understanding the following is important for the rest of the workshop, as we will manipulate JSON, which are all dataframes in a Couchbase Shell context.__ 
 
-Couchbase Shell is based on [nushell](https://www.nushell.sh/), where everything structured is managed as a dataframe, and every commands can be piped. Here Project returns the list of projects your API Key gives you access to. You can type `projects` to display the list. It's piped in the next command `cb-env project` that requires a string argument. (type `cb-env project -h` to see the details of the command). '\$in' refers to whatever was piped in that command. As it's a list of records, '\$in.0.name' will get the first element of the list, then the value of the record 'name'.
+Couchbase Shell is based on [nushell](https://www.nushell.sh/), where everything structured is managed as a dataframe, and every commands can be piped. Here Project returns the list of projects your API Key gives you access to. You can type `projects` to display the list. It's piped in the next command `cb-env project` that requires a string argument. (type `cb-env project -h` to see the details of the command). '\$in' refers to whatever was piped in that command. As it's a list of records, '$in.0.name' will get the first element of the list, then the value of the record 'name'.
 
 ---
 
-Now that the Project has been selected, we can list available clusters by running the `clusters` command. We can assign the name our Free Tier cluster by running `let cluster_name = clusters | \$in.0.name`. This variable will be accessible with `\$cluster_name` until you exit Couchbase Shell.
+Now that the Project has been selected, we can list available clusters by running the `clusters` command. 
+We can assign the name our Free Tier cluster by running:
+
+```nushell
+let cluster_name = clusters | $in.0.name`
+```
+
+This variable will be accessible with `$cluster_name` until you exit Couchbase Shell.
 
 The following command allows you to register the cluster:
 
@@ -183,8 +203,9 @@ The following command allows you to register the cluster:
 cb-env cluster $cluster_name
 ```
 
-Replace:
-- `your-password` with the password you will create (yes we are setting up the connection before creating the user, an it must contain an uppercase letter, lowercase letter, number and special character, and minimum 8 chars long.)
+> [!NOTE]
+> Replace:
+- `your-password` with the password you will create (yes we are setting up the connection before creating the user, and it must contain an uppercase letter, lowercase letter, number and special character, and minimum 8 chars long.)
 
 ### Step 2.4: Create the User
 
@@ -209,7 +230,7 @@ scopes create --bucket chat_data workshop
 collections create --bucket chat_data --scope workshop knowledge_base
 ```
 
-At this point you cqn run `cb-env` to get an overview of your current context. The commands you will run will refer to these unless specified otherwise.
+At this point you can run `cb-env` to get an overview of your current context. The commands you will run will refer to these unless specified otherwise.
 
 ## Part 3: Your First Chat Request
 
@@ -261,13 +282,15 @@ doc upsert doc1 {title: "Platform Support Changes", category: "platform", text: 
 
 # Document 2: GSI Vectors
 doc upsert doc2 {title: "GSI Vector Indexes", category: "features", text: "Couchbase Server 8.0 introduces Hyperscale Vector indexes and Composite Vector indexes in the Index Service, enabling vector-search workloads (e.g., for AI applications). Hyperscale supports single vector column for very large datasets; Composite supports one vector plus scalar filters for hybrid vector+scalar queries, alongside existing Search Vector indexes."}
-
 ```
 
 If the operation is failing with a timeout error, we set pretty aggressive default, especially for a Free Tier instance, that you can change running the following:
 ```nushell
-👤 workshop_user 🏠 fixedjohncreynolds in ☁️ chat_data.workshop.knowledge_base
-> cb-env timeouts --data-timeout 50000
+cb-env timeouts --data-timeout 50000
+```
+
+You should see a similar response as following:
+```
 ╭──────────────────────────┬────────╮
 │ data_timeout (ms)        │ 50000  │
 │ management_timeout (ms)  │ 75000  │
@@ -280,8 +303,11 @@ If the operation is failing with a timeout error, we set pretty aggressive defau
 
 Creating documents manually can be a painful process. A bulk import is also available and can be run like this:
 ```nushell
-👤 workshop_user 🏠 fixedjohncreynolds in ☁️ chat_data.workshop.knowledge_base
-> doc import  features.json
+doc import  features.json
+```
+
+Response will be shown as follows:
+```
 ╭───┬───────────┬─────────┬────────┬────────────────┬────────────────────╮
 │ # │ processed │ success │ failed │    failures    │      cluster       │
 ├───┼───────────┼─────────┼────────┼────────────────┼────────────────────┤
@@ -292,10 +318,12 @@ Creating documents manually can be a painful process. A bulk import is also avai
 As you can see it failed because no id were provider. We can easily generate one like so:
 
 ```nushell
-👤 workshop_user 🏠 fixedjohncreynolds in ☁️ chat_data.workshop.knowledge_base
-> open features.json | each { |x| $x| insert id (random uuid)} | save  features_with_id.json
-👤 workshop_user 🏠 fixedjohncreynolds in ☁️ chat_data.workshop.knowledge_base
-> doc import --id-column id features_with_id.json
+open features.json | each { |x| $x| insert id (random uuid)} | save  features_with_id.json
+doc import --id-column id features_with_id.json
+```
+
+Response will be shown as follows:
+```
 ╭───┬───────────┬─────────┬────────┬──────────┬────────────────────╮
 │ # │ processed │ success │ failed │ failures │      cluster       │
 ├───┼───────────┼─────────┼────────┼──────────┼────────────────────┤
@@ -397,8 +425,9 @@ def rag-ask [question: string] {
 To use it, like most shell you can source it by running `source rag.nu`. The `rag-ask` command should be available and usable like so:
 
 ```nushell
-👤 workshop_user 🏠 fixedjohncreynolds in ☁️ chat_data.workshop.knowledge_base
-> rag-ask "What are the latest features in Couchbase 8.0"
+rag-ask "What are the latest features in Couchbase 8.0"
+```
+```
 Embedding batch 1/1 
 Couchbase Server 8.0 comes with several new and enhanced features, including:
 
@@ -446,11 +475,12 @@ You'll test several more questions to really see the difference. The RAG version
 ```nushell
 # Question about features
 ask "Tell me about Couchbase scopes and collections"
-rag-chat "Tell me about Couchbase scopes and collections"
-
+rag-ask "Tell me about Couchbase scopes and collections"
+```
+```nushell
 # Question about vector search
 ask "How does vector search work in Couchbase?"
-rag-chat "How does vector search work in Couchbase?"
+rag-ask "How does vector search work in Couchbase?"
 ```
 
 ---
@@ -523,6 +553,7 @@ This could give you an almost similar behavior as before, with a twist in the sy
 
 Congratulations! You've built a complete RAG system. Here's what you accomplished:
 
+✅ **Implemented** Fully managed DBaaS with Capella Free Tier  
 ✅ **Installed** Couchbase Shell and connected to Capella  
 ✅ **Set up** OpenAI API integration  
 ✅ **Created** a simple chat application  
