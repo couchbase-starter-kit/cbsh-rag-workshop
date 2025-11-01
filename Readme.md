@@ -73,7 +73,7 @@ export OPENAI_API_KEY="sk-your-key-here"
 $env:OPENAI_API_KEY="sk-your-key-here"
 ```
 > [!IMPORTANT]
-> Keep your key around as we will also copy-paste it in Couchbase Shell's configuration later on.
+> Keep your key around: as we will also copy-paste it in Couchbase Shell's configuration later on.
 
 
 ### Step 1.3: Set Up Couchbase Capella Free Tier
@@ -96,20 +96,25 @@ Once your cluster is ready:
 
 1. **Create an API Key on Organization Level:**
 
-    - Go to **Organization** Settings
-    - Click on "API Keys", "Generate Key"
-    - Choose a Key Name, check all Organization Roles
-    - Click on "Generate Key"
-    - Make sure you copy the API Key and API Secret
+    - Go to **Organization** Settings 
+    - Click on "API Keys", "Generate Key" <details><summary>👀 Click to view screenshot</summary><img src="images/OrgSettingsAPIKeys1.png" width="900" alt="Dashboard screenshot"></details>
+    - Choose a Key Name, check all Organization Roles <details><summary>👀 Click to view screenshot</summary><img src="images/OrgSettingsAPIKeys2.png" width="900" alt="Dashboard screenshot"></details>
+    - Click on "Generate Key" <details><summary>👀 Click to view screenshot</summary><img src="images/OrgSettingsAPIKeysGenerate1.png" width="900" alt="Dashboard screenshot"></details>
+    - Make sure you copy the API Key and API Secret <details><summary>👀 Click to view screenshot</summary><img src="images/OrgSettingsAPIKeysDownload1.png" width="900" alt="Dashboard screenshot"></details>
 
 > [!CAUTION]
-> **API Secret** of API Key will only be shown once you've created the API Key, hence do not forget to copy the API Secret or "Download" the whole key on the creation window.
+> **API Secret** will only be shown once, namely just after you've created the API Key. Hence **do not forget** to copy the API Secret or "Download" the whole API Key information on the creation window.
 
 2. **Assign Allowed IP Addresses for your Cluster:**
 
-   - Go to **Cluster** "Settings" → "Allowed IP Addresses"
-   - Click "Add Allowed IP"
-   - Add your current IP (or use 0.0.0.0/0 for testing)
+   - Go to **Cluster** "Settings" <details><summary>👀 Click to view screenshot</summary><img src="images/ClusterSettings1.png" width="900" alt="Dashboard screenshot"></details>
+   - Click on "Allowed IP Addresses" under Networking menu <details><summary>👀 Click to view screenshot</summary><img src="images/ClusterSettingsAddIP1.png" width="900" alt="Dashboard screenshot"></details>
+   - Click "Add Allowed IP" button 
+   - Select either "Add Current IP Address" or "Allow Access from Anywhere" (which uses 0.0.0.0/0) <details><summary>👀 Click to view screenshot</summary><img src="images/ClusterSettingsAddIP2.png" width="900" alt="Dashboard screenshot"></details>
+   - If you select "Allow Access from Anywhere", you have to confirm this choice <details><summary>👀 Click to view screenshot</summary><img src="images/ClusterSettingsAddIP3.png" width="900" alt="Dashboard screenshot"></details>
+
+> [!NOTE]
+> "Allow Access from Anywhere" allows without restriction any connection to your cluster. This is useful for testing and development purposes, but in production you must consider to restrict the allowed IP addresses to your cluster.
 
 ---
 
@@ -427,6 +432,8 @@ To use it, like most shell you can source it by running `source rag.nu`. The `ra
 ```nushell
 rag-ask "What are the latest features in Couchbase 8.0"
 ```
+
+You should see a similar response as follows:
 ```
 Embedding batch 1/1 
 Couchbase Server 8.0 comes with several new and enhanced features, including:
@@ -473,13 +480,19 @@ rag-ask "What is Couchbase Capella and what does the free tier include?"
 You'll test several more questions to really see the difference. The RAG version should consistently provide more accurate, specific information from your knowledge base.
 
 ```nushell
-# Question about features
+# Question about features, ChatGPT
 ask "Tell me about Couchbase scopes and collections"
+```
+```nushell
+# Question about features, RAG
 rag-ask "Tell me about Couchbase scopes and collections"
 ```
 ```nushell
-# Question about vector search
+# Question about vector search, ChatGPT
 ask "How does vector search work in Couchbase?"
+```
+```nushell
+# Question about vector search, RAG
 rag-ask "How does vector search work in Couchbase?"
 ```
 
