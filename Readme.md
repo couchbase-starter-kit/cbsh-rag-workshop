@@ -389,7 +389,7 @@ You'll run a search query that finds the most similar documents to your question
 ```nushell
 # Function to search using vectors
 let question = vector enrich-text "What are the latest features in Couchbase 8.0" 
-vector search  knowledge_base_idx textVector $question.content.vector.0 --neighbors 10
+vector search knowledge_base_idx textVector $question.content.vector.0 --neighbors 10
 ```
 You should see a list of 10 documents that are closest to the question in meaning, ranked by similarity.
 
@@ -401,7 +401,7 @@ We run the search, use the result to fetch only the text field thanks to the `su
 
 ```nushell
 # Function to search using vectors
-vector search  knowledgebase_idx textVector $question.content.vector.0 --neighbors 10 | subdoc get text | select content | ask $question.content.text.0
+vector search  knowledge_base_idx textVector $question.content.vector.0 --neighbors 10 | subdoc get text | select content | ask $question.content.text.0
 ```
 
 The result is a precise answer to your questions thanks to the addition of relevant context using RAG.
@@ -414,21 +414,25 @@ This is the culmination of everything! You'll combine vector search with OpenAI 
 
 ### Step 6.1: Wrap it up in a RAG function
 
-You will create a new Couchbase Shell/Nushell function that wraps up the search and ask part. Create a new file named rag.nu with the following content:
+You will create a new Couchbase Shell/Nushell function that wraps up the search and ask part. Create a new file named **rag.nu** with the following content:
 
 
 ```nushell
 # RAG-enhanced chat function
 def rag-ask [question: string] {
   let vectorized_question = ( vector enrich-text $question | $in.content.vector.0 )
-  let search_results = vector search knowledgebase_idx textVector $vectorized_question --neighbors 10
+  let search_results = vector search knowledge_base_idx textVector $vectorized_question --neighbors 10
   let context = $search_results | subdoc get text | select content
   $context | ask $question
 }
 ```
 
-To use it, like most shell you can source it by running `source rag.nu`. The `rag-ask` command should be available and usable like so:
+To use it, like most shell you can source it by running:
+```nushell
+source rag.nu 
+```
 
+The `rag-ask` command should be available and usable like so:
 ```nushell
 rag-ask "What are the latest features in Couchbase 8.0"
 ```
@@ -553,7 +557,7 @@ def generate-embedding [text: string, options] {
 # RAG-enhanced chat function
 def rag-ask [question: string] {
   let vectorized_question = generate-embedding $question {}
-  let search_results = vector search knowledgebase_idx textVector $vectorized_question --neighbors 10
+  let search_results = vector search knowledge_base_idx textVector $vectorized_question --neighbors 10
   let context = $search_results | subdoc get text | select content
   $context | chat  "gpt-3.5-turbo" $question {}
 }
