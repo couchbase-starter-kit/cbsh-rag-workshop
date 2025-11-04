@@ -97,21 +97,21 @@ Once your cluster is ready:
 1. **Create an API Key on Organization Level:**
 
     - Go to **Organization** Settings 
-    - Click on "API Keys", "Generate Key" <details><summary>👀 Click to view screenshot</summary><img src="images/OrgSettingsAPIKeys1.png" width="900" alt="Dashboard screenshot"></details>
-    - Choose a Key Name, check all Organization Roles <details><summary>👀 Click to view screenshot</summary><img src="images/OrgSettingsAPIKeys2.png" width="900" alt="Dashboard screenshot"></details>
-    - Click on "Generate Key" <details><summary>👀 Click to view screenshot</summary><img src="images/OrgSettingsAPIKeysGenerate1.png" width="900" alt="Dashboard screenshot"></details>
-    - Make sure you copy the API Key and API Secret <details><summary>👀 Click to view screenshot</summary><img src="images/OrgSettingsAPIKeysDownload1.png" width="900" alt="Dashboard screenshot"></details>
+    - Click on "API Keys", "Generate Key" <details><summary>👀 Click to view screenshot</summary><img src="images/OrgSettingsAPIKeys1.png" width="900" alt="Org settings screenshot"></details>
+    - Choose a Key Name, check all Organization Roles <details><summary>👀 Click to view screenshot</summary><img src="images/OrgSettingsAPIKeys2.png" width="900" alt="Org settigs roles screenshot"></details>
+    - Click on "Generate Key" <details><summary>👀 Click to view screenshot</summary><img src="images/OrgSettingsAPIKeysGenerate1.png" width="900" alt="Generate key screenshot"></details>
+    - Make sure you copy the API Key and API Secret <details><summary>👀 Click to view screenshot</summary><img src="images/OrgSettingsAPIKeysDownload1.png" width="900" alt="API Key screenshot"></details>
 
 > [!CAUTION]
 > **API Secret** will only be shown once, namely just after you've created the API Key. Hence **do not forget** to copy the API Secret or "Download" the whole API Key information on the creation window.
 
 2. **Assign Allowed IP Addresses for your Cluster:**
 
-   - Go to **Cluster** "Settings" <details><summary>👀 Click to view screenshot</summary><img src="images/ClusterSettings1.png" width="900" alt="Dashboard screenshot"></details>
-   - Click on "Allowed IP Addresses" under Networking menu <details><summary>👀 Click to view screenshot</summary><img src="images/ClusterSettingsAddIP1.png" width="900" alt="Dashboard screenshot"></details>
+   - Go to **Cluster** "Settings" <details><summary>👀 Click to view screenshot</summary><img src="images/ClusterSettings1.png" width="900" alt="Cluster settings screenshot"></details>
+   - Click on "Allowed IP Addresses" under Networking menu <details><summary>👀 Click to view screenshot</summary><img src="images/ClusterSettingsAddIP1.png" width="900" alt="Allowed IP screenshot"></details>
    - Click "Add Allowed IP" button 
-   - Select either "Add Current IP Address" or "Allow Access from Anywhere" (which uses 0.0.0.0/0) <details><summary>👀 Click to view screenshot</summary><img src="images/ClusterSettingsAddIP2.png" width="900" alt="Dashboard screenshot"></details>
-   - If you select "Allow Access from Anywhere", you have to confirm this choice <details><summary>👀 Click to view screenshot</summary><img src="images/ClusterSettingsAddIP3.png" width="900" alt="Dashboard screenshot"></details>
+   - Select either "Add Current IP Address" or "Allow Access from Anywhere" (which uses 0.0.0.0/0) <details><summary>👀 Click to view screenshot</summary><img src="images/ClusterSettingsAddIP2.png" width="900" alt="Allow Access screenshot"></details>
+   - If you select "Allow Access from Anywhere", you have to confirm this choice <details><summary>👀 Click to view screenshot</summary><img src="images/ClusterSettingsAddIP3.png" width="900" alt="Allow Access confirmation screenshot"></details>
 
 > [!NOTE]
 > "Allow Access from Anywhere" allows without restriction any connection to your cluster. This is useful for testing and development purposes, but in production you must consider to restrict the allowed IP addresses to your cluster.
@@ -205,6 +205,8 @@ The following command allows you to register the cluster:
   --username workshop_user 
   --password yourPassword123!
   --save  )
+```
+```nushell
 cb-env cluster $cluster_name
 ```
 
@@ -335,7 +337,7 @@ Response will be shown as follows:
 │ 0 │        30 │      30 │      0 │          │ fixedjohncreynolds │
 ╰───┴───────────┴─────────┴────────┴──────────┴────────────────────╯
 ```
-
+When you open one of the documents in the Capella Free Tier UI, you should see the **textVector** field with vector embeddings <details><summary>👀 Click to view screenshot</summary><img src="images/TextVectorField.png" width="900" alt="textVector Field screenshot"></details>
 
 ### Step 4.2: Verify Your Documents
 
