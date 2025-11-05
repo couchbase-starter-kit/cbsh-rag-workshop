@@ -187,7 +187,7 @@ Now that the Project has been selected, we can list available clusters by runnin
 We can assign the name our Free Tier cluster by running:
 
 ```nushell
-let cluster_name = clusters | $in.0.name`
+let cluster_name = clusters | $in.0.name
 ```
 
 This variable will be accessible with `$cluster_name` until you exit Couchbase Shell.
