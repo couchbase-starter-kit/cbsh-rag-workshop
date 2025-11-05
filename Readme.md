@@ -124,9 +124,10 @@ In this section, you'll connect your local Couchbase Shell to your cloud databas
 
 ### Step 2.1: Couchbase Shell Initial Configuration
 
-Let's add the Couchbase Capella API Key and the LLM Configuration. yourOrgIdentifier can be whatever you want. It will be used later on to associate an API key with a cluster configuration. 
+Let's add the Couchbase Capella API Key and the LLM Configuration. `yourOrgIdentifier` can be whatever you want. It will be used later on to associate an API key with a cluster configuration. 
 
-1. open `~/.cbsh/config` and edit this file with the following content:
+1. create a folder named `.cbsh` in the same folder, where Couchbase Shell executable will be run
+2. open/create `~/.cbsh/config` and edit this file with the following content:
 
 ```
 version = 1
@@ -145,6 +146,11 @@ chat_model = "gpt-3.5-turbo"
 api_key = "sk-your-key"
 
 ```
+
+> [!NOTE]
+> 1. The value of `identifier` key in this config file will also be used in step 2.3
+> 2. Replace `yourAccessKey` and `yourSecretKey` with API Key's values, which have been created in step 1.4
+
 
 ### Step 2.2: Start Couchbase Shell
 
@@ -194,6 +200,9 @@ This variable will be accessible with `$cluster_name` until you exit Couchbase S
 
 The following command allows you to register the cluster:
 
+> [!NOTE]
+> Please be sure that the parameter `--capealla-organization` has the same value with the `identifier` key, which you've already defined in your config file in step 2.1
+
 ```nushell
 # Register your cluster
 ( clusters get $cluster_name | cb-env register $cluster_name $in."connection string"
@@ -212,7 +221,7 @@ cb-env cluster $cluster_name
 
 > [!NOTE]
 > Replace:
-- `your-password` with the password you will create (yes we are setting up the connection before creating the user, and it must contain an uppercase letter, lowercase letter, number and special character, and minimum 8 chars long.)
+> `your-password` with the password you will create (yes we are setting up the connection before creating the user, and it must contain an uppercase letter, lowercase letter, number and special character, and minimum 8 chars long.)
 
 ### Step 2.4: Create the User
 
@@ -229,10 +238,12 @@ You'll create a logical organization for your data. Think of a scope as a databa
 ```nushell
 # Create a bucket for our project
 buckets create chat_data 1024
-
+```
+```nushell
 # Create a scope for our project
 scopes create --bucket chat_data workshop
-
+```
+```nushell
 # Create a collection for documents
 collections create --bucket chat_data --scope workshop knowledge_base
 ```
