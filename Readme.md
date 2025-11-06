@@ -126,7 +126,7 @@ In this section, you'll connect your local Couchbase Shell to your cloud databas
 
 Let's add the Couchbase Capella API Key and the LLM Configuration. `yourOrgIdentifier` can be whatever you want. It will be used later on to associate an API key with a cluster configuration. 
 
-1. create a folder named `.cbsh` in the same folder, where Couchbase Shell executable will be run
+1. create a folder named `.cbsh` in the same folder, where Couchbase Shell executable will be run, or in your home directory like `~/.cbsh/`
 2. open/create `~/.cbsh/config` and edit this file with the following content:
 
 ```
