@@ -348,7 +348,6 @@ Response will be shown as follows:
 │ 0 │        30 │      30 │      0 │          │ fixedjohncreynolds │
 ╰───┴───────────┴─────────┴────────┴──────────┴────────────────────╯
 ```
-When you open one of the documents in the Capella Free Tier UI, you should see the **textVector** field with vector embeddings <details><summary>👀 Click to view screenshot</summary><img src="images/TextVectorField.png" width="900" alt="textVector Field screenshot"></details>
 
 ### Step 4.2: Verify Your Documents
 
@@ -373,6 +372,9 @@ query "SELECT text, title FROM chat_data.workshop.knowledge_base" | explore
 ```
 
 If you explore the results, you will see each document have a `textVector` field containing vectors.
+
+You can also open documents in the Capella Free Tier UI to see the same **textVector** field with vector embeddings <details><summary>👀 Click to view screenshot</summary><img src="images/TextVectorField.png" width="900" alt="textVector Field screenshot"></details>
+
 
 ---
 
