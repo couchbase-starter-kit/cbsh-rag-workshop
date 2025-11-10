@@ -30,22 +30,34 @@ We'll start by installing Couchbase Shell, which will be your command-line inter
 brew install couchbase-shell
 ```
 
+> [!NOTE]
+> Alternatively you can also download the appropriate ZIP file from following link to extract in a folder:
+> - MacOS Intel (x86/x64): https://github.com/couchbaselabs/couchbase-shell/releases/download/v1.0.0/cbsh-x86_64-apple-darwin.zip
+> - MacOS Apple Silicon: https://github.com/couchbaselabs/couchbase-shell/releases/download/v1.0.0/cbsh-aarch64-apple-darwin.zip
+
 **Linux:**
+- Download the latest Linux release from following links
+ - For **Linux x86/64**
 ```bash
-# Download the latest release
 wget https://github.com/couchbaselabs/couchbase-shell/releases/download/v1.1.0/cbsh-x86_64-unknown-linux-gnu.tar.gz
 tar -xzf cbsh-x86_64-unknown-linux-gnu.tar.gz
 sudo mv cbsh /usr/local/bin/
 ```
 
-**Windows:**
-```powershell
-# Download from GitHub releases
-# https://github.com/couchbaselabs/couchbase-shell/releases/download/v1.1.0/cbsh-x86_64-pc-windows-msvc.zip
-# Extract and add to PATH
+ - For **Linux aarch64**
+```bash
+wget https://github.com/couchbaselabs/couchbase-shell/releases/download/v1.0.0/cbsh-aarch64-unknown-linux-gnu.tar.gz
+tar -xzf cbsh-x86_64-unknown-linux-gnu.tar.gz
+sudo mv cbsh /usr/local/bin/
 ```
 
-Verify installation:
+**Windows:**
+1. Download from GitHub releases
+- https://github.com/couchbaselabs/couchbase-shell/releases/download/v1.1.0/cbsh-x86_64-pc-windows-msvc.zip
+2. Extract and add to PATH
+
+
+Verify the Couchbase Shell installation with `--version` parameter:
 ```bash
 cbsh --version
 ```
@@ -63,13 +75,13 @@ To Create an OpenAI Key:
 4. Copy your key (starts with `sk-`)
 
 **Set your OpenAI API key:**
+- macOS/Linux
 ```bash
-# macOS/Linux
 export OPENAI_API_KEY="sk-your-key-here"
 ```
 
+- Windows PowerShell
 ```bash
-# Windows PowerShell
 $env:OPENAI_API_KEY="sk-your-key-here"
 ```
 > [!IMPORTANT]
@@ -136,7 +148,7 @@ version = 1
 identifier = "yourOrgIdentifier"
 access-key = "yourAccessKey"
 secret-key = "yourSecretKey"
-default-project = "Trial - Project"
+default-project = "My First Project"
 
 [[llm]]
 identifier = "OpenAI-small"
@@ -150,6 +162,7 @@ api_key = "sk-your-key"
 > [!NOTE]
 > 1. The value of `identifier` key in this config file will also be used in step 2.3
 > 2. Replace `yourAccessKey` and `yourSecretKey` with API Key's values, which have been created in step 1.4
+> 3. Replace `default-project` value, **only if you set this to another value during the creation of Free Tier Capella cluster**
 
 
 ### Step 2.2: Start Couchbase Shell
@@ -235,20 +248,25 @@ credentials create --read  --write --username workshop_user --password yourPassw
 
 You'll create a logical organization for your data. Think of a scope as a database and a collection as a table - this is where your documents will be stored.
 
+- Create a bucket for our project
 ```nushell
-# Create a bucket for our project
 buckets create chat_data 1024
 ```
+
+- Create a scope for our project
 ```nushell
-# Create a scope for our project
 scopes create --bucket chat_data workshop
 ```
+
+- Create a collection for documents
 ```nushell
-# Create a collection for documents
 collections create --bucket chat_data --scope workshop knowledge_base
 ```
 
 At this point you can run `cb-env` to get an overview of your current context. The commands you will run will refer to these unless specified otherwise.
+```nushell
+cb-env
+```
 
 ## Part 3: Your First Chat Request
 
@@ -256,10 +274,9 @@ This is where the fun begins! You'll run your first commands to interact with Op
 
 ### Step 3.1: Create a Simple Chat Function
 
-Ask OpenAI a question about Couchbase and see what it knows from its training data.
+Ask OpenAI a simple question about Couchbase and see what it knows from its training data.
 
 ```nushell
-# Ask a simple question
 ask "What is Couchbase?"
 ```
 
@@ -269,18 +286,23 @@ You should see a response from OpenAI!
 
 You'll experiment with different questions to understand the limitations of a basic chat system - it only knows what was in its training data and can't access your specific information.
 
+- Now ask about databases
 ```nushell
-# Ask about databases
 ask "Explain what a document database is in simple terms"
+```
 
-# Ask about vector search
+- Ask about vector search
+```nushell
 ask "What is vector search used for?"
+```
 
-# Ask something OpenAI doesn't know
+- Ask something OpenAI doesn't know
+```nushell
 ask "What are the latest features in Couchbase 8.0"
 ```
 
-**Notice**: OpenAI might not have specific, up-to-date information about Couchbase features. This is where RAG helps!
+> [!NOTE]
+> OpenAI might not have the specific, up-to-date information about Couchbase features. This is where "**RAG** helps!
 
 ---
 
@@ -294,11 +316,13 @@ You'll insert five documents containing information about Couchbase features. Th
 
 Let's add some documents about Couchbase features:
 
+- Now let's create our first document on Couchbase Platform changes, which are coming with v8.0. These are very new information, for which OpenAI's referenced embedding model was trained yet
 ```nushell
-# Document 1: Platform changes
 doc upsert doc1 {title: "Platform Support Changes", category: "platform", text: "Couchbase Server 8.0 adds support for Alma Linux 10, Debian Linux 13, macOS 15 (Sequoia, development only), Oracle Linux 10, RHEL 10, Rocky Linux 10, and Windows Server 2025. It also drops support for Amazon Linux 2, macOS 12 (Monterey), SLES 12, Ubuntu 20.04 LTS, and Windows 10/Server 2019."}
+```
 
-# Document 2: GSI Vectors
+- The second document shal have information on the new Vector Indexes (Hyperscale and Composite Vector indexes), which have been introduces with v8.0
+```nushell
 doc upsert doc2 {title: "GSI Vector Indexes", category: "features", text: "Couchbase Server 8.0 introduces Hyperscale Vector indexes and Composite Vector indexes in the Index Service, enabling vector-search workloads (e.g., for AI applications). Hyperscale supports single vector column for very large datasets; Composite supports one vector plus scalar filters for hybrid vector+scalar queries, alongside existing Search Vector indexes."}
 ```
 
@@ -319,10 +343,13 @@ You should see a similar response as following:
 ╰──────────────────────────┴────────╯
 ```
 
-Creating documents manually can be a painful process. A bulk import is also available and can be run like this:
+Creating documents manually can be a timely process. A bulk import is also available and can be run like this:
+> [!IMPORTANT]
+> Download the `features.json` into the same folder as `./cbsh`, before running the following command
 ```nushell
-doc import  features.json
+doc import features.json
 ```
+
 
 Response will be shown as follows:
 ```
