@@ -29,9 +29,12 @@ We'll start by installing Couchbase Shell, which will be your command-line inter
 ```bash
 brew install couchbase-shell
 ```
+> [!TIP]
+> The command `brew --prefix` shows the folder name, to which the couchbase-shell application was installed.  
+> On Intel Macs, this is often `/usr/local`. On Apple Silicon Macs, it's `/opt/homebrew`.
 
 > [!NOTE]
-> Alternatively you can also download the appropriate ZIP file from following link to extract in a folder:
+> Alternatively you can also download the appropriate ZIP file from one of the following links and extract in a folder, to run couchbase-shell directly from that folder:  
 > - MacOS Intel (x86/x64): https://github.com/couchbaselabs/couchbase-shell/releases/download/v1.0.0/cbsh-x86_64-apple-darwin.zip
 > - MacOS Apple Silicon: https://github.com/couchbaselabs/couchbase-shell/releases/download/v1.0.0/cbsh-aarch64-apple-darwin.zip
 
@@ -139,7 +142,7 @@ In this section, you'll connect your local Couchbase Shell to your cloud databas
 Let's add the Couchbase Capella API Key and the LLM Configuration. `yourOrgIdentifier` can be whatever you want. It will be used later on to associate an API key with a cluster configuration. 
 
 1. create a folder named `.cbsh` in the same folder, where Couchbase Shell executable will be run, or in your home directory like `~/.cbsh/`
-2. open/create `~/.cbsh/config` and edit this file with the following content:
+2. open/create `~/.cbsh/config` and edit this configuration file with the following content:
 
 ```
 version = 1
@@ -162,7 +165,7 @@ api_key = "sk-your-key"
 > [!NOTE]
 > 1. The value of `identifier` key in this config file will also be used in step 2.3
 > 2. Replace `yourAccessKey` and `yourSecretKey` with API Key's values, which have been created in step 1.4
-> 3. Replace `default-project` value, **only if you set this to another value during the creation of Free Tier Capella cluster**
+> 3. Replace `default-project` value, **only if you set this to another value during the creation of your Free Tier Capella cluster**
 
 
 ### Step 2.2: Start Couchbase Shell
@@ -184,6 +187,26 @@ You should see the Couchbase Shell prompt:
 >
 ```
 
+Just after starting couchbase-shell, if you see a warning, that a plugin could not be found, you can ignore it.  
+
+You can now run following simple command, to list the projects in your newly created Free Tier Capella cluster:
+```nushell
+projects
+```
+
+This command shall list the projects without an error:
+```nushell
+╭───┬──────────────────┬──────────────────────────────────────╮
+│ # │       name       │                  id                  │
+├───┼──────────────────┼──────────────────────────────────────┤
+│ 0 │ My First Project │ 19668563-3876-431d-a255-04c7138616db │
+╰───┴──────────────────┴──────────────────────────────────────╯
+```
+> [!WARNING]
+> If couchbase-shell could not connect to the cluster, the `projects` cannot list the available projects and return an error message. In this case:  
+> 1. either check where your config file is saved (i.e. whether couchbase-shell has access to the config file)
+> 2. or check the values in your `config` file (especially the project name and API keys)
+
 
 ### Step 2.3: Register Your Capella Cluster
 
@@ -191,7 +214,6 @@ You'll now tell Couchbase Shell how to connect to your cloud cluster by providin
 
 Select the Capella project you will be working on:
 ```nushell
-# Select a Project
 projects | cb-env project $in.0.name
 ```
 
@@ -209,39 +231,69 @@ We can assign the name our Free Tier cluster by running:
 let cluster_name = clusters | $in.0.name
 ```
 
-This variable will be accessible with `$cluster_name` until you exit Couchbase Shell.
+This variable will be accessible with `$cluster_name` until you exit Couchbase Shell.  
 
-The following command allows you to register the cluster:
+#### Step 2.3.1: Defining Variables to utilize in further steps
+At this point let's define further variables, in order to be able to access via variable names.  
+You can edit the values for your needs:
 
+- Capella Org-Identifier
+```nushell
+let identifier = "yourOrgIdentifier"
+```
+
+- Bucket Name
+```nushell
+let bucket_name = "chat_data"
+```
+
+- Scope Name
+```nushell
+let scope_name = "workshop"
+```
+
+- Collection Name
+```nushell
+let collection_name = "knowledge_base"
+```
+
+- API User Name
+```nushell
+let user_name = "workshop_user"
+```
+
+- API User Password
 > [!NOTE]
-> Please be sure that the parameter `--capealla-organization` has the same value with the `identifier` key, which you've already defined in your config file in step 2.1
+> The password must contain an uppercase letter, lowercase letter, number and special character, and has to be minimum 8 chars long.
+```nushell
+let user_pwd = "yourPassword123!"
+```
+
+#### Step 2.3.2: Registering Free Tier Capella Cluster
+The following command allows you to register the cluster:
 
 ```nushell
 # Register your cluster
 ( clusters get $cluster_name | cb-env register $cluster_name $in."connection string"
-  --capella-organization "yourOrgIdentifier"
+  --capella-organization "$identifier"
   --project (projects | $in.0.name)
-  --default-bucket chat_data
-  --default-scope workshop
-  --default-collection knowledge_base
-  --username workshop_user 
-  --password yourPassword123!
+  --default-bucket $bucket_name
+  --default-scope $scope_name
+  --default-collection $collection_name
+  --username $user_name 
+  --password $user_pwd
   --save  )
 ```
 ```nushell
 cb-env cluster $cluster_name
 ```
 
-> [!NOTE]
-> Replace:
-> `your-password` with the password you will create (yes we are setting up the connection before creating the user, and it must contain an uppercase letter, lowercase letter, number and special character, and minimum 8 chars long.)
-
 ### Step 2.4: Create the User
 
 With an active Project and Cluster, we can create the cluster user. 
 
 ```nushell
-credentials create --read  --write --username workshop_user --password yourPassword123!
+credentials create --read  --write --username $user_name --password $user_pwd
 ```
 
 ### Step 2.5: Create Scope and Collection
@@ -250,17 +302,17 @@ You'll create a logical organization for your data. Think of a scope as a databa
 
 - Create a bucket for our project
 ```nushell
-buckets create chat_data 1024
+buckets create $bucket_name 1024
 ```
 
 - Create a scope for our project
 ```nushell
-scopes create --bucket chat_data workshop
+scopes create --bucket $bucket_name $scope_name
 ```
 
 - Create a collection for documents
 ```nushell
-collections create --bucket chat_data --scope workshop knowledge_base
+collections create --bucket $bucket_name --scope $scope_name $collection_name
 ```
 
 At this point you can run `cb-env` to get an overview of your current context. The commands you will run will refer to these unless specified otherwise.
@@ -302,7 +354,7 @@ ask "What are the latest features in Couchbase 8.0"
 ```
 
 > [!NOTE]
-> OpenAI might not have the specific, up-to-date information about Couchbase features. This is where "**RAG** helps!
+> OpenAI might not have the specific, up-to-date information about the lates Couchbase features, which were recently introduced with v8.0. This is where "**RAG** helps!
 
 ---
 
@@ -345,7 +397,8 @@ You should see a similar response as following:
 
 Creating documents manually can be a timely process. A bulk import is also available and can be run like this:
 > [!IMPORTANT]
-> Download the `features.json` into the same folder as `./cbsh`, before running the following command
+> Download the `features.json` into the same folder as `./cbsh`, before running the following command.  
+
 ```nushell
 doc import features.json
 ```
@@ -360,7 +413,7 @@ Response will be shown as follows:
 ╰───┴───────────┴─────────┴────────┴────────────────┴────────────────────╯
 ```
 
-As you can see it failed because no id were provider. We can easily generate one like so:
+As you can see it failed, because no unique IDs for the keys were provided. We can easily generate random unique IDs for the key/value pairs in the JSON like this:
 
 ```nushell
 open features.json | each { |x| $x| insert id (random uuid)} | save  features_with_id.json
@@ -375,14 +428,17 @@ Response will be shown as follows:
 │ 0 │        30 │      30 │      0 │          │ fixedjohncreynolds │
 ╰───┴───────────┴─────────┴────────┴──────────┴────────────────────╯
 ```
-When you open one of the documents in the Capella Free Tier UI, you should see the **textVector** field with vector embeddings <details><summary>👀 Click to view screenshot</summary><img src="images/TextVectorField.png" width="900" alt="textVector Field screenshot"></details>
+> [!NOTE]
+> This JSON file has 30 key/value pairs with information on the newest Couchbase v8.0 features, which were imported with `doc import...` command
+
+When you open one of the documents in the Capella Free Tier UI, you should see the **textVector** field with vector embeddings  
+<details><summary>👀 Click to view screenshot</summary><img src="images/TextVectorField.png" width="900" alt="textVector Field screenshot"></details>
 
 ### Step 4.2: Verify Your Documents
 
-A quick check to make sure all your documents were successfully stored in Couchbase.
+A quick check to make sure all your documents were successfully stored in Couchbase. We can now run a SQL++ query on all documents:
 
 ```nushell
-# Query all documents
 query "SELECT text, title FROM chat_data.workshop.knowledge_base"
 ```
 
@@ -396,10 +452,14 @@ We can use `vector enrich-doc`, a Couchbase Shell built-in function that takes t
 
 ```nushell
 query "SELECT meta().id, * FROM `chat_data`.`workshop`.`knowledge_base`"  | vector enrich-doc text | doc upsert
+```
+```nushell
 query "SELECT text, title FROM chat_data.workshop.knowledge_base" | explore
 ```
+> [!TIP]
+> The command `explore` shows all the documents in a list, to close this list and to return back to nushell, click on `ESC` button
 
-If you explore the results, you will see each document have a `textVector` field containing vectors.
+If you explore the results, you will see, that each document now has a `textVector` field containing vector embeddings, which were created from the `text` field of each document
 
 ---
 
@@ -409,10 +469,9 @@ Here you'll configure Couchbase to perform vector search. You'll create a specia
 
 ### Step 5.1: Create a Search Index with Vector Field
 
-You'll create a search index that can handle both text and vector fields. This is what powers semantic search in your RAG system.
-
+You'll create a search index that can handle both text and vector fields. This is what powers semantic search in your **RAG** system.
+Create a search index with vector support:
 ```nushell
-# Create a search index with vector support
 vector create-index knowledge_base_idx textVector 1536
 ```
 
@@ -427,20 +486,22 @@ query indexes
 You'll run a search query that finds the most similar documents to your question. This is the core of RAG!
 
 ```nushell
-# Function to search using vectors
-let question = vector enrich-text "What are the latest features in Couchbase 8.0" 
+let question = vector enrich-text "What are the latest features in Couchbase 8.0"
+```
+
+Now let's run the function to search using vectors:
+```nushell
 vector search knowledge_base_idx textVector $question.content.vector.0 --neighbors 10
 ```
 You should see a list of 10 documents that are closest to the question in meaning, ranked by similarity.
 
 ### Step 5.3: Use RAG
 
-This is the main reason we are here, to ask a question and get a better answer thanks to RAG.
+This is the main reason we are here, to ask a question and get a better answer thanks to **RAG**.
 
 We run the search, use the result to fetch only the text field thanks to the `subdoc get` operation, select the content field and pass the rsult to the ask command. 
 
 ```nushell
-# Function to search using vectors
 vector search  knowledge_base_idx textVector $question.content.vector.0 --neighbors 10 | subdoc get text | select content | ask $question.content.text.0
 ```
 
@@ -454,7 +515,7 @@ This is the culmination of everything! You'll combine vector search with OpenAI 
 
 ### Step 6.1: Wrap it up in a RAG function
 
-You will create a new Couchbase Shell/Nushell function that wraps up the search and ask part. Create a new file named **rag.nu** with the following content:
+You will create a new Couchbase Shell/Nushell function that wraps up the search and ask part. Create a new file named **rag.nu** with the following content in the same folder as the cbsh application:
 
 
 ```nushell
@@ -523,20 +584,20 @@ rag-ask "What is Couchbase Capella and what does the free tier include?"
 
 You'll test several more questions to really see the difference. The RAG version should consistently provide more accurate, specific information from your knowledge base.
 
+- Question about features with generic **ChatGPT**
 ```nushell
-# Question about features, ChatGPT
 ask "Tell me about Couchbase scopes and collections"
 ```
+- Question about features with specific **RAG**
 ```nushell
-# Question about features, RAG
 rag-ask "Tell me about Couchbase scopes and collections"
 ```
+- Question about vector search with generic **ChatGPT**
 ```nushell
-# Question about vector search, ChatGPT
 ask "How does vector search work in Couchbase?"
 ```
+- Question about vector search with specific **RAG**
 ```nushell
-# Question about vector search, RAG
 rag-ask "How does vector search work in Couchbase?"
 ```
 
