@@ -3,6 +3,10 @@
 
 Welcome! In this workshop, you'll build an AI-powered application using Couchbase Shell, starting with a simple chat request and evolving it into a RAG (Retrieval-Augmented Generation) system.
 
+If you're new to Couchbase, please click the following for more information on Couchbase NoSQL DB Platform.
+
+For an architecture overview please click the following link.
+
 ---
 
 ## What You'll Build
@@ -66,26 +70,40 @@ cbsh --version
 ```
 #### Step 1.2: Setup your AI API Key
 
-Next, you'll create an AI API Key. This key allows your applications to access LLMs APIs to generate embeddings(vector representation of your content), and to start chat conversation. Right now [Couchbase Shell is compatible with OpenAI, Gemini and Bedrocks](https://couchbase.sh/docs/#_cb_env_llm).
+Next, you'll create an AI API Key. This key allows your applications to access LLMs APIs to generate embeddings(vector representation of your content), and to start chat conversation. Right now [Couchbase Shell is compatible with OpenAI, Gemini and Amazon Bedrock](https://couchbase.sh/docs/#_cb_env_llm).
 
-#### Step 1.2.1: Get Your OpenAI API Key
+#### Step 1.2.1 Get Your API Key for LLMs (#get-api-key)
 
-To Create an OpenAI Key:
+In this workshop you can utilize API keys from: 
+- **OpenAI** (which might need a paid subscription), or
+- **Gemini** (no paid subscription is needed if you have a Google account and create API key on AIStudio)
 
-1. Go to https://platform.openai.com/api-keys
+##### Alternative 1: Get Your OpenAI API Key
+To Create an OpenAI API Key follow the following steps (a paid subscription might be needed):
+
+1. Go to [https://platform.openai.com/api-keys](https://platform.openai.com/api-keys)
 2. Sign up or log in
 3. Click "Create new secret key"
 4. Copy your key (starts with `sk-`)
 
-**Set your OpenAI API key:**
+##### Alternative 2: Get Your Gemini API Key
+To Create a Gemini API Key follow the following steps (a paid subscription might be needed):
+
+1. Go to [https://aistudio.google.com/api-keys](https://aistudio.google.com/api-keys)
+2. Sign up or log in
+3. Click "Create API key"
+4. Copy your key
+
+**Set your LLM API key:**  
+Now you set your API key as environment variable according to your choice  
 - macOS/Linux
 ```bash
-export OPENAI_API_KEY="sk-your-key-here"
+export LLM_API_KEY="your-API-key-here"
 ```
 
 - Windows PowerShell
 ```bash
-$env:OPENAI_API_KEY="sk-your-key-here"
+$env:LLM_API_KEY="your-API-key-here"
 ```
 > [!IMPORTANT]
 > Keep your key around: as we will also copy-paste it in Couchbase Shell's configuration later on.
@@ -142,8 +160,9 @@ In this section, you'll connect your local Couchbase Shell to your cloud databas
 Let's add the Couchbase Capella API Key and the LLM Configuration. `yourOrgIdentifier` can be whatever you want. It will be used later on to associate an API key with a cluster configuration. 
 
 1. create a folder named `.cbsh` in the same folder, where Couchbase Shell executable will be run, or in your home directory like `~/.cbsh/`
-2. open/create `~/.cbsh/config` and edit this configuration file with the following content:
+2. open/create `~/.cbsh/config` and edit this configuration file with the following content according to your API key choice made in [Step 1.2.1](#get-api-key):
 
+##### Alternative 1: Config with OpenAI API Key
 ```
 version = 1
 
@@ -159,6 +178,25 @@ provider = "OpenAI"
 embed_model = "text-embedding-3-small"
 chat_model = "gpt-3.5-turbo"
 api_key = "sk-your-key"
+
+```
+
+##### Alternative 2: Config with Gemini/AIStudio API Key
+```
+version = 1
+
+[[capella-organization]]
+identifier = "yourOrgIdentifier"
+access-key = "yourAccessKey"
+secret-key = "yourSecretKey"
+default-project = "My First Project"
+
+[[llm]]
+identifier = "Gemini-small"
+provider = "Gemini"
+embed_model = "models/text-embedding-004"
+chat_model = "gemini-2.5-flash-lite"
+api_key = "your-API-key"
 
 ```
 
@@ -471,8 +509,18 @@ Here you'll configure Couchbase to perform vector search. You'll create a specia
 
 You'll create a search index that can handle both text and vector fields. This is what powers semantic search in your **RAG** system.
 Create a search index with vector support:
+
+> [!IMPORTANT]
+> The dimensions of Vector Embeddings varies according to your API key choice made in [Step 1.2.1](#get-api-key)
+
+- for OpenAI API key:  
 ```nushell
 vector create-index knowledge_base_idx textVector 1536
+```
+
+- for Gemini/AIStudio API key:  
+```nushell
+vector create-index knowledge_base_idx textVector 768
 ```
 
 **Note**: The index takes 30-60 seconds to build. You can check status with:
@@ -604,10 +652,10 @@ rag-ask "How does vector search work in Couchbase?"
 ---
 
 ## Part 7: Enhance Your RAG System (Bonus)
-
+> [!NOTE]
+> This bonus part works only with OpenAI API key
+   
 Want to take it further? These optional enhancements will make your RAG system more powerful by adding source citations and conversation memory.
-
-
 
 ### Step 7.1: Rewrite the RAG Functions
 
@@ -638,20 +686,20 @@ def chat [model, message, options] {
       temperature: 0.7
     };
     let json = $json | merge $options
-    let response = ( http post  -e -f $url $json --headers ["Authorization" $"Bearer ($env.OPENAI_API_KEY) " ]   --content-type "application/json")
+    let response = ( http post  -e -f $url $json --headers ["Authorization" $"Bearer ($env.LLM_API_KEY) " ]   --content-type "application/json")
     $response.body.choices.0.message.content
 }
 
 # Function to generate embeddings
 def generate-embedding [text: string, options] {
-  let api_key = $env.OPENAI_API_KEY
+  let api_key = $env.LLM_API_KEY
   let url = " https://api.openai.com/v1/embeddings" 
   let json = {
     model: "text-embedding-3-small",
     input: $text
   };
   let json = $json | merge $options
-  let response = ( http post  -e -f $url $json --headers ["Authorization" $"Bearer ($env.OPENAI_API_KEY) " ]   --content-type "application/json")
+  let response = ( http post  -e -f $url $json --headers ["Authorization" $"Bearer ($env.LLM_API_KEY) " ]   --content-type "application/json")
   $response.body.data.0.embedding
 }
 
