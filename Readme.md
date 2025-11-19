@@ -3,7 +3,19 @@
 
 Welcome! In this workshop, you'll build an AI-powered application using Couchbase Shell, starting with a simple chat request and evolving it into a RAG (Retrieval-Augmented Generation) system.
 
-If you're new to Couchbase, please click the following for more information on Couchbase NoSQL DB Platform.
+## Couchbase NoSQL Database – Quick Recap & Key Features for Building RAG Applications 
+Couchbase is a distributed NoSQL database that blends the flexibility of JSON document storage with the performance of a high-throughput, low-latency key-value store. It supports seamless scale-out, automatic sharding, and built-in replication, making it well-suited for AI-driven applications that require fast access to diverse, unstructured data.
+For Retrieval-Augmented Generation (RAG), Couchbase provides:
+- **Flexible JSON Document Model** : Store semi-structured and unstructured data without rigid schemas, ideal for knowledge bases and AI-ready content.
+- **High-performance Key-Value Engine** : Sub-millisecond reads/writes enable responsive retrieval pipelines and efficient vector lookups.
+- **Integrated Vector Search** : Built into the Search Service, enabling high-dimensional vector indexing and similarity search directly in the database. This eliminates the need for external vector stores and provides hybrid search (vector + keyword + filters).
+- **SQL++ Query Language** : SQL-for-JSON support allows expressive queries, joins, and filtering, enabling hybrid RAG workflows combining metadata, text, and vector similarity.
+- **Full-Text Search (FTS)** : Tokenization, analyzers, fuzzy search, and scoring support help augment vector similarity with lexical relevance for improved retrieval accuracy.
+- **Eventing & Functions** : Built-in serverless compute capabilities allow data transformation, embeddings generation triggers, and pipeline automation.
+- **Scalable Architecture** : Independent scaling of Data, Query, Index, Search, and Analytics services provides predictable performance for both transactional and AI workloads.
+- **CLI-first Operability** : Tools like couchbase-shell, cbimport, cbq, and cbc allow full cluster configuration, data loading, querying, and index management from the command line—ideal for hands-on workshops.
+
+Together, these capabilities enable Couchbase to serve as both the system of record and the vector-aware retrieval engine in modern RAG architectures, simplifying deployment and reducing operational complexity.
 
 For an architecture overview please click the following link.
 
