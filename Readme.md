@@ -1,9 +1,11 @@
 # Couchbase Shell AI Workshop
 ## From Simple Chat to RAG
 
-Welcome! In this workshop, you'll build an AI-powered application using Couchbase Shell, starting with a simple chat request and evolving it into a RAG (Retrieval-Augmented Generation) system.
+Welcome! In this workshop, you'll build an AI-powered application using Couchbase Shell, starting with a simple chat request and evolving it into a RAG (Retrieval-Augmented Generation) system.  
 
-## Couchbase NoSQL Database – Quick Recap & Key Features for Building RAG Applications 
+---
+
+## Couchbase NoSQL Database Platform – Quick Recap 
 Couchbase is a distributed NoSQL database that blends the flexibility of JSON document storage with the performance of a high-throughput, low-latency key-value store. It supports seamless scale-out, automatic sharding, and built-in replication, making it well-suited for AI-driven applications that require fast access to diverse, unstructured data.
 For Retrieval-Augmented Generation (RAG), Couchbase provides:
 - **Flexible JSON Document Model** : Store semi-structured and unstructured data without rigid schemas, ideal for knowledge bases and AI-ready content.
@@ -13,18 +15,24 @@ For Retrieval-Augmented Generation (RAG), Couchbase provides:
 - **Full-Text Search (FTS)** : Tokenization, analyzers, fuzzy search, and scoring support help augment vector similarity with lexical relevance for improved retrieval accuracy.
 - **Eventing & Functions** : Built-in serverless compute capabilities allow data transformation, embeddings generation triggers, and pipeline automation.
 - **Scalable Architecture** : Independent scaling of Data, Query, Index, Search, and Analytics services provides predictable performance for both transactional and AI workloads.
-- **CLI-first Operability** : Tools like couchbase-shell, cbimport, cbq, and cbc allow full cluster configuration, data loading, querying, and index management from the command line—ideal for hands-on workshops.
+- **CLI-first Operability** : Tools like couchbase-shell, cbimport, cbq, and cbc allow full cluster configuration, data loading, querying, and index management from the command line.
 
-Together, these capabilities enable Couchbase to serve as both the system of record and the vector-aware retrieval engine in modern RAG architectures, simplifying deployment and reducing operational complexity.
+Together, these capabilities enable Couchbase to serve as both the system of record and the vector-aware retrieval engine in modern RAG architectures, simplifying deployment and reducing operational complexity.  
+<details><summary>👀 Click to view Couchbase's diffrentiated architecture. The Vector Search feature, which is circled in red, will be utilized in this workshop.</summary><img src="images/CBDifferentiatedArch.png" width="900" alt="Org settings screenshot"></details>
 
-For an architecture overview please click the following link.
+---
+## Reference Architecture  
+Here we have a reference architecture for Retrieval Augmented Generation (RAG). What RAG does is to boost content quality by integrating relevant information in real time.
+
+We send a question to the embedding model, which returns a vector. This vector is then used in a query to the query service, which internally uses the index service to retrieve the top K nearest neighbors (kNN), typically semantically similar documents. These documents are relevant, but they only provide relative knowledge from the search results.
+Next, we send these top k-results (usually three) along with the original question to chat model of the selected large language model (LLM, i.e. OpenAI or Gemini). The LLM uses this information to generate a factual answer based on relevant knowledge from our data corpus. The key advantage here is that the LLM's ability to hallucinate irrelevant information is greatly reduced, because we’re biasing it with data directly derived from our own vector search results.
 
 ---
 
 ## What You'll Build
 
 By the end of this workshop, you'll have:
-1. A working connection to OpenAI's API
+1. A working connection to the selected LLM API (OpenAI or Gemini)
 2. A Couchbase Capella database with vector search
 3. A simple chat application
 4. A RAG system that enhances responses with your own data
@@ -86,9 +94,9 @@ Next, you'll create an AI API Key. This key allows your applications to access L
 
 #### Step 1.2.1 Get Your API Key for LLMs (#get-api-key)
 
-In this workshop you can utilize API keys from: 
+In this workshop you can utilize API keys from one of the following LLM vendors: 
 - **OpenAI** (which might need a paid subscription), or
-- **Gemini** (no paid subscription is needed if you have a Google account and create API key on AIStudio)
+- **Gemini** (no paid subscription is needed, if you have a Google account and create API key on AIStudio)
 
 ##### Alternative 1: Get Your OpenAI API Key
 To Create an OpenAI API Key follow the following steps (a paid subscription might be needed):
@@ -107,7 +115,7 @@ To Create a Gemini API Key follow the following steps (a paid subscription might
 4. Copy your key
 
 **Set your LLM API key:**  
-Now you set your API key as environment variable according to your choice  
+Now you set your API key as environment variable  
 - macOS/Linux
 ```bash
 export LLM_API_KEY="your-API-key-here"
@@ -130,7 +138,7 @@ Now you'll create a free tier cloud database cluster. Couchbase Capella is a ful
 3. Click "Create Cluster"
 4. Select **Free Tier** (Capella Trial)
 5. Choose a region close to you
-6. Name your cluster (e.g., "rag-workshop")
+6. Name your cluster (e.g.: `rag-workshop`)
 7. Wait 2-3 minutes for provisioning
 
 ### Step 1.4: Configure Database Access
