@@ -25,7 +25,9 @@ Together, these capabilities enable Couchbase to serve as both the system of rec
 Here we have a reference architecture for Retrieval Augmented Generation (RAG). What RAG does is to boost content quality by integrating relevant information in real time.
 
 We send a question to the embedding model, which returns a vector. This vector is then used in a query to the query service, which internally uses the index service to retrieve the top K nearest neighbors (kNN), typically semantically similar documents. These documents are relevant, but they only provide relative knowledge from the search results.
-Next, we send these top k-results (usually three) along with the original question to chat model of the selected large language model (LLM, i.e. OpenAI or Gemini). The LLM uses this information to generate a factual answer based on relevant knowledge from our data corpus. The key advantage here is that the LLM's ability to hallucinate irrelevant information is greatly reduced, because we’re biasing it with data directly derived from our own vector search results.
+Next, we send these top k-results (usually three) along with the original question to chat model of the selected large language model (LLM, i.e. OpenAI or Gemini). The LLM uses this information to generate a factual answer based on relevant knowledge from our data corpus. The key advantage here is that the LLM's ability to hallucinate irrelevant information is greatly reduced, because we’re biasing it with data directly derived from our own vector search results.  
+
+💡 Key Benefit: The LLM the model isn’t just guessing; it’s **guided by real, trusted context** from your own data. RAG reduces hallucinations by anchoring LLM answers in your data, and not just its training set.
 
 ---
 
@@ -47,15 +49,12 @@ In this section, you'll install all the necessary tools and set up your accounts
 
 ### Step 1.1: Install Couchbase Shell
 
-We'll start by installing Couchbase Shell, which will be your command-line interface for interacting with both Couchbase and OpenAI throughout this workshop.
+We'll start by installing Couchbase Shell, which will be your command-line interface for interacting with both Couchbase and LLMs (OpenAI/Gemini) throughout this workshop.
 
 **macOS:**
 ```bash
 brew install couchbase-shell
 ```
-> [!TIP]
-> The command `brew --prefix` shows the folder name, to which the couchbase-shell application was installed.  
-> On Intel Macs, this is often `/usr/local`. On Apple Silicon Macs, it's `/opt/homebrew`.
 
 > [!NOTE]
 > Alternatively you can also download the appropriate ZIP file from one of the following links and extract in a folder, to run couchbase-shell directly from that folder:  
@@ -126,7 +125,7 @@ export LLM_API_KEY="your-API-key-here"
 $env:LLM_API_KEY="your-API-key-here"
 ```
 > [!IMPORTANT]
-> Keep your key around: as we will also copy-paste it in Couchbase Shell's configuration later on.
+> Keep your key around: as we will also use it in Couchbase Shell's configuration later on.
 
 
 ### Step 1.3: Set Up Couchbase Capella Free Tier
@@ -138,8 +137,8 @@ Now you'll create a free tier cloud database cluster. Couchbase Capella is a ful
 3. Click "Create Cluster"
 4. Select **Free Tier** (Capella Trial)
 5. Choose a region close to you
-6. Name your cluster (e.g.: `rag-workshop`)
-7. Wait 2-3 minutes for provisioning
+6. Name your cluster: `rag-workshop`
+7. Wait a few minutes for provisioning
 
 ### Step 1.4: Configure Database Access
 
@@ -179,15 +178,16 @@ In this section, you'll connect your local Couchbase Shell to your cloud databas
 
 Let's add the Couchbase Capella API Key and the LLM Configuration. `yourOrgIdentifier` can be whatever you want. It will be used later on to associate an API key with a cluster configuration. 
 
-1. create a folder named `.cbsh` in the same folder, where Couchbase Shell executable will be run, or in your home directory like `~/.cbsh/`
-2. open/create `~/.cbsh/config` and edit this configuration file with the following content according to your API key choice made in [Step 1.2.1](#get-api-key):
+1. create a folder named `.cbsh`  
+1.1 if you installed Couchbase Shell by unzipping into a folder, you need to create the `.cbsh` folder in the same folder as Couchbase Shell application.
+2. create `config` file and edit this configuration file with the following content according to your API key choice made in [Step 1.2.1](#get-api-key):
 
 ##### Alternative 1: Config with OpenAI API Key
 ```
 version = 1
 
 [[capella-organization]]
-identifier = "yourOrgIdentifier"
+identifier = "rag-workshop"
 access-key = "yourAccessKey"
 secret-key = "yourSecretKey"
 default-project = "My First Project"
@@ -206,7 +206,7 @@ api_key = "sk-your-key"
 version = 1
 
 [[capella-organization]]
-identifier = "yourOrgIdentifier"
+identifier = "rag-workshop"
 access-key = "yourAccessKey"
 secret-key = "yourSecretKey"
 default-project = "My First Project"
@@ -221,9 +221,9 @@ api_key = "your-API-key"
 ```
 
 > [!NOTE]
-> 1. The value of `identifier` key in this config file will also be used in step 2.3
-> 2. Replace `yourAccessKey` and `yourSecretKey` with API Key's values, which have been created in step 1.4
-> 3. Replace `default-project` value, **only if you set this to another value during the creation of your Free Tier Capella cluster**
+> 1. Replace `yourAccessKey` and `yourSecretKey` with API Key's values, which have been created in Step 1.4
+> 2. Replace `default-project` value, **only if you set this to another value during the creation of your Free Tier Capella cluster**
+> 3. Replace `your-API-Key` with your selected LLM's API key
 
 
 ### Step 2.2: Start Couchbase Shell
@@ -247,7 +247,7 @@ You should see the Couchbase Shell prompt:
 
 Just after starting couchbase-shell, if you see a warning, that a plugin could not be found, you can ignore it.  
 
-You can now run following simple command, to list the projects in your newly created Free Tier Capella cluster:
+Now run the following simple command, to list the projects in your newly created Free Tier Capella cluster:
 ```nushell
 projects
 ```
@@ -261,7 +261,7 @@ This command shall list the projects without an error:
 ╰───┴──────────────────┴──────────────────────────────────────╯
 ```
 > [!WARNING]
-> If couchbase-shell could not connect to the cluster, the `projects` cannot list the available projects and return an error message. In this case:  
+> If couchbase-shell could not connect to the cluster, the `projects` command cannot list the available projects and return an error message. In this case:  
 > 1. either check where your config file is saved (i.e. whether couchbase-shell has access to the config file)
 > 2. or check the values in your `config` file (especially the project name and API keys)
 
@@ -295,11 +295,6 @@ This variable will be accessible with `$cluster_name` until you exit Couchbase S
 At this point let's define further variables, in order to be able to access via variable names.  
 You can edit the values for your needs:
 
-- Capella Org-Identifier
-```nushell
-let identifier = "yourOrgIdentifier"
-```
-
 - Bucket Name
 ```nushell
 let bucket_name = "chat_data"
@@ -328,19 +323,18 @@ let user_pwd = "yourPassword123!"
 ```
 
 #### Step 2.3.2: Registering Free Tier Capella Cluster
-The following command allows you to register the cluster:
+The following command allows you to register the cluster into the config file:
 
 ```nushell
-# Register your cluster
-( clusters get $cluster_name | cb-env register $cluster_name $in."connection string"
-  --capella-organization "$identifier"
+clusters get $cluster_name | cb-env register $cluster_name $in."connection string"
+  --capella-organization "rag-workshop"
   --project (projects | $in.0.name)
   --default-bucket $bucket_name
   --default-scope $scope_name
   --default-collection $collection_name
   --username $user_name 
   --password $user_pwd
-  --save  )
+  --save  
 ```
 ```nushell
 cb-env cluster $cluster_name
@@ -384,13 +378,13 @@ This is where the fun begins! You'll run your first commands to interact with Op
 
 ### Step 3.1: Create a Simple Chat Function
 
-Ask OpenAI a simple question about Couchbase and see what it knows from its training data.
+Ask LLM (OpenAI or Gemini) a simple question about Couchbase and see what it knows from its training data.
 
 ```nushell
 ask "What is Couchbase?"
 ```
 
-You should see a response from OpenAI!
+You should see a response from your choice of LLM (OpenAI or Gemini)!
 
 ### Step 3.3: Try More Questions
 
@@ -412,7 +406,7 @@ ask "What are the latest features in Couchbase 8.0"
 ```
 
 > [!NOTE]
-> OpenAI might not have the specific, up-to-date information about the lates Couchbase features, which were recently introduced with v8.0. This is where "**RAG** helps!
+> LLM (OpenAI or Gemini) might not have the specific, up-to-date information about the latest Couchbase features, which were recently introduced with v8.0. This is where "**RAG** helps!
 
 ---
 
@@ -422,11 +416,11 @@ Now you'll start building your knowledge base. You'll add documents with informa
 
 ### Step 4.1: Add Knowledge to Your Database
 
-You'll insert five documents containing information about Couchbase features. This is your custom knowledge that the AI doesn't have in its training data.
+You'll insert a few documents containing information about Couchbase features. This is your custom knowledge that the AI doesn't have in its training data.
 
 Let's add some documents about Couchbase features:
 
-- Now let's create our first document on Couchbase Platform changes, which are coming with v8.0. These are very new information, for which OpenAI's referenced embedding model was trained yet
+- Now let's create our first document on Couchbase Platform changes, which are coming with v8.0. These are very new information, for which LLM's referenced embedding model was trained yet
 ```nushell
 doc upsert doc1 {title: "Platform Support Changes", category: "platform", text: "Couchbase Server 8.0 adds support for Alma Linux 10, Debian Linux 13, macOS 15 (Sequoia, development only), Oracle Linux 10, RHEL 10, Rocky Linux 10, and Windows Server 2025. It also drops support for Amazon Linux 2, macOS 12 (Monterey), SLES 12, Ubuntu 20.04 LTS, and Windows 10/Server 2019."}
 ```
@@ -455,7 +449,7 @@ You should see a similar response as following:
 
 Creating documents manually can be a timely process. A bulk import is also available and can be run like this:
 > [!IMPORTANT]
-> Download the `features.json` into the same folder as `./cbsh`, before running the following command.  
+> Download the `features.json` from Github repo onto your notebook (for unzipped installation of Couchbase Shell: into the same folder as Couchbase Shell application)
 
 ```nushell
 doc import features.json
@@ -474,7 +468,7 @@ Response will be shown as follows:
 As you can see it failed, because no unique IDs for the keys were provided. We can easily generate random unique IDs for the key/value pairs in the JSON like this:
 
 ```nushell
-open features.json | each { |x| $x| insert id (random uuid)} | save  features_with_id.json
+open features.json | each { |x| $x| insert id (random uuid)} | save features_with_id.json
 doc import --id-column id features_with_id.json
 ```
 
@@ -487,10 +481,7 @@ Response will be shown as follows:
 ╰───┴───────────┴─────────┴────────┴──────────┴────────────────────╯
 ```
 > [!NOTE]
-> This JSON file has 30 key/value pairs with information on the newest Couchbase v8.0 features, which were imported with `doc import...` command
-
-When you open one of the documents in the Capella Free Tier UI, you should see the **textVector** field with vector embeddings  
-<details><summary>👀 Click to view screenshot</summary><img src="images/TextVectorField.png" width="900" alt="textVector Field screenshot"></details>
+> With this command you just imported 30 additional documents (key/value pairs) with information on the newest Couchbase v8.0 features into your bucket
 
 ### Step 4.2: Verify Your Documents
 
@@ -504,9 +495,9 @@ You should see all the documents!
 
 ### Step 4.3: Create Embeddings for Your Documents
 
-You'll a query that converts text into vector embeddings using OpenAI's embedding model. These vectors will allow you to search by meaning, not just keywords.
+You'll run following query and a command that converts text into vector embeddings using selected LLM's embedding model. These vectors will allow you to search by meaning, not just keywords.
 
-We can use `vector enrich-doc`, a Couchbase Shell built-in function that takes the field of a document and send it to OpenAI, gets a Vector back and add it to the doc. The new doc is then upserted.
+We use the command `vector enrich-doc <field-name>`, a Couchbase Shell built-in function that takes the field of the document and send it to LLM, gets Vector Embeddings back from LLM' embedding model and adds it to the documents as a new field by postfixing the field name with 'Vector' (i.e. `<field-name>Vector`). The new docs are then upserted (updated if doc is existing, inserted if doc is not existing).
 
 ```nushell
 query "SELECT meta().id, * FROM `chat_data`.`workshop`.`knowledge_base`"  | vector enrich-doc text | doc upsert
@@ -515,7 +506,7 @@ query "SELECT meta().id, * FROM `chat_data`.`workshop`.`knowledge_base`"  | vect
 query "SELECT text, title FROM chat_data.workshop.knowledge_base" | explore
 ```
 > [!TIP]
-> The command `explore` shows all the documents in a list, to close this list and to return back to nushell, click on `ESC` button
+> The command `explore` shows all the documents with field name in a table, to close this table and to return back to nushell, click on `ESC` button
 
 If you explore the results, you will see, that each document now has a `textVector` field containing vector embeddings, which were created from the `text` field of each document
 
@@ -531,19 +522,26 @@ You'll create a search index that can handle both text and vector fields. This i
 Create a search index with vector support:
 
 > [!IMPORTANT]
-> The dimensions of Vector Embeddings varies according to your API key choice made in [Step 1.2.1](#get-api-key)
+> The dimensions of Vector Embeddings varies according to your API key choice made in Step 1.2.1
 
-- for OpenAI API key:  
+- for the OpenAI chat and embedding models in the configuration file, we need to set 1536 dimensions for vector embeddings:  
 ```nushell
 vector create-index knowledge_base_idx textVector 1536
 ```
 
-- for Gemini/AIStudio API key:  
+- for Gemini/AIStudio API key, we need to set 768 dimensions for vector embeddings::   
 ```nushell
 vector create-index knowledge_base_idx textVector 768
 ```
 
-**Note**: The index takes 30-60 seconds to build. You can check status with:
+> [!NOTE]
+> You need to select the correct combination of chat and embedding models from the LLM vendors, which must have the same dimensions for vector embeddings.  
+> In Couchbase, you can have up to 4096 dimensions for vector embeddings.
+
+When you open one of the documents in the Capella Free Tier UI, you should see the new `textVector` field with vector embeddings  
+<details><summary>👀 Click to view screenshot</summary><img src="images/TextVectorField.png" width="900" alt="textVector Field screenshot"></details>
+
+**Note**: The index could take 10-30 seconds to build. You can check status with:
 
 ```nushell
 query indexes
@@ -579,11 +577,11 @@ The result is a precise answer to your questions thanks to the addition of relev
 
 ## Part 6: Build Your RAG System (10 minutes)
 
-This is the culmination of everything! You'll combine vector search with OpenAI chat to create a RAG system. When someone asks a question, you'll search your knowledge base, add relevant context to the prompt, and get accurate, informed responses.
+This is the culmination of everything! You'll combine vector search with LLM (OpenAI or Gemini) chat to create a RAG system. When someone asks a question, you'll search your knowledge base, add relevant context to the prompt, and get accurate, informed responses.
 
 ### Step 6.1: Wrap it up in a RAG function
 
-You will create a new Couchbase Shell/Nushell function that wraps up the search and ask part. Create a new file named **rag.nu** with the following content in the same folder as the cbsh application:
+You will create a new Couchbase Shell/Nushell function that wraps up the search and ask part. Create a new file named `rag.nu` with the following content:
 
 
 ```nushell
@@ -601,7 +599,7 @@ To use it, like most shell you can source it by running:
 source rag.nu 
 ```
 
-The `rag-ask` command should be available and usable like so:
+The `rag-ask` command should be available and is usable as follows:
 ```nushell
 rag-ask "What are the latest features in Couchbase 8.0"
 ```
@@ -632,27 +630,25 @@ These features collectively enhance performance, security, and usability of Couc
 
 This is the moment of truth! You'll ask the same question using both the regular chat function (from Part 3) and your new RAG function, and compare the results side-by-side.
 
-**First, try the original chat function:**
+**First, try the original chat function, i.e regular chat without RAG:**
 
 ```nushell
-# Regular chat without RAG
 ask "What is Couchbase Capella and what does the free tier include?"
 ```
 
-**Now try with RAG:**
+**Now try with RAG-enhanced chat:**
 
 ```nushell
-# RAG-enhanced chat
 rag-ask "What is Couchbase Capella and what does the free tier include?"
 ```
 
-**Compare the results!** The RAG version should provide specific details about the 50GB storage and 1GB RAM from your knowledge base.
+**Compare the results!** The RAG version should provide specific details about the 50GB storage and 1GB RAM from our knowledge base.
 
 ### Step 6.3: Try More Comparisons
 
 You'll test several more questions to really see the difference. The RAG version should consistently provide more accurate, specific information from your knowledge base.
 
-- Question about features with generic **ChatGPT**
+- Question about features with generic **LLM** (**OpenAI's ChatGPT or Gemini)**
 ```nushell
 ask "Tell me about Couchbase scopes and collections"
 ```
@@ -660,7 +656,7 @@ ask "Tell me about Couchbase scopes and collections"
 ```nushell
 rag-ask "Tell me about Couchbase scopes and collections"
 ```
-- Question about vector search with generic **ChatGPT**
+- Question about vector search with generic **LLM** (**OpenAI's ChatGPT or Gemini)**
 ```nushell
 ask "How does vector search work in Couchbase?"
 ```
