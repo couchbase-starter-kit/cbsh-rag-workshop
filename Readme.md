@@ -7,25 +7,31 @@ Welcome! In this workshop, you'll build an AI-powered application using Couchbas
 
 ## Couchbase NoSQL Database Platform – Quick Recap 
 Couchbase is a distributed NoSQL database that blends the flexibility of JSON document storage with the performance of a high-throughput, low-latency key-value store. It supports seamless scale-out, automatic sharding, and built-in replication, making it well-suited for AI-driven applications that require fast access to diverse, unstructured data.
-For Retrieval-Augmented Generation (RAG), Couchbase provides:
+For Retrieval-Augmented Generation (RAG), Couchbase provides:  
+
+<img src="images/CBDifferentiatedArch.png" width="900" alt="Org settings screenshot">  
+
 - **Flexible JSON Document Model** : Store semi-structured and unstructured data without rigid schemas, ideal for knowledge bases and AI-ready content.
 - **High-performance Key-Value Engine** : Sub-millisecond reads/writes enable responsive retrieval pipelines and efficient vector lookups.
-- **Integrated Vector Search** : Built into the Search Service, enabling high-dimensional vector indexing and similarity search directly in the database. This eliminates the need for external vector stores and provides hybrid search (vector + keyword + filters).
 - **SQL++ Query Language** : SQL-for-JSON support allows expressive queries, joins, and filtering, enabling hybrid RAG workflows combining metadata, text, and vector similarity.
+- **Integrated Vector Search** : Built into the Search Service, enabling high-dimensional vector indexing and similarity search directly in the database. This eliminates the need for external vector stores and provides hybrid search (vector + keyword + filters).
 - **Full-Text Search (FTS)** : Tokenization, analyzers, fuzzy search, and scoring support help augment vector similarity with lexical relevance for improved retrieval accuracy.
+- **Vector Search** : Couchbase integrates Vector Search to power AI-driven applications by enabling semantic and similarity-based queries on unstructured data. It stores and indexes high-dimensional embeddings alongside JSON documents, allowing hybrid queries that combine traditional attributes with vector similarity. Built on a distributed architecture. Developers can use SQL++ for hybrid queries and integrate with popular ML frameworks for embedding generation. 
 - **Eventing & Functions** : Built-in serverless compute capabilities allow data transformation, embeddings generation triggers, and pipeline automation.
+- **Enterprise Analytics** : empowers organizations with real-time, scalable analytics by combining operational and analytical workloads in a single platform. The platform supports high-performance indexing, event-driven architectures, and streaming data pipelines, enabling enterprises to analyze customer behavior, operational metrics, and IoT data without ETL delays.
+- **Couchbase Mobile** : provides an offline-first architecture through Couchbase Lite and Sync Gateway, ensuring reliable data sync between edge devices and the cloud. It supports peer-to-peer synchronization, end-to-end encryption, and automatic conflict resolution, making it perfect for industries with intermittent connectivity like retail, healthcare, and logistics. 
 - **Scalable Architecture** : Independent scaling of Data, Query, Index, Search, and Analytics services provides predictable performance for both transactional and AI workloads.
-- **CLI-first Operability** : Tools like couchbase-shell, cbimport, cbq, and cbc allow full cluster configuration, data loading, querying, and index management from the command line.
 
 Together, these capabilities enable Couchbase to serve as both the system of record and the vector-aware retrieval engine in modern RAG architectures, simplifying deployment and reducing operational complexity.  
-<details><summary>👀 Click to view Couchbase's diffrentiated architecture. The Vector Search feature, which is circled in red, will be utilized in this workshop.</summary><img src="images/CBDifferentiatedArch.png" width="900" alt="Org settings screenshot"></details>
 
 ---
 ## Reference Architecture  
-Here we have a reference architecture for Retrieval Augmented Generation (RAG). What RAG does is to boost content quality by integrating relevant information in real time.
+Here we have a reference architecture for Retrieval Augmented Generation (RAG). What RAG does is to boost content quality by integrating relevant information in real time.  
+<details><summary>👀 Click to view the referemce architecture</summary><img src="images/RAGRefArch.png" width="900" alt="Org settings screenshot"></details>
 
-We send a question to the embedding model, which returns a vector. This vector is then used in a query to the query service, which internally uses the index service to retrieve the top K nearest neighbors (kNN), typically semantically similar documents. These documents are relevant, but they only provide relative knowledge from the search results.
-Next, we send these top k-results (usually three) along with the original question to chat model of the selected large language model (LLM, i.e. OpenAI or Gemini). The LLM uses this information to generate a factual answer based on relevant knowledge from our data corpus. The key advantage here is that the LLM's ability to hallucinate irrelevant information is greatly reduced, because we’re biasing it with data directly derived from our own vector search results.  
+When a user asks a question, it’s turned into vector embeddings and Couchbase retrieves the most relevant matches. These vector embeddings are then used in a query in the query service, which internally uses the index service to retrieve the top k-nearest neighbors (kNN), typically semantically similar documents. Instead of returning them directly, those results are passed along with the original question to a large language model. The LLM uses both pieces -your data and the query- to generate a grounded, factual response.  
+
+These documents are relevant and they can provide relative knowledge from the search results: the hallucination of LLM (delivering irrelevant information) is greatly reduced, because we’re biasing it with data directly derived from our own vector search results.  
 
 💡 Key Benefit: The LLM the model isn’t just guessing; it’s **guided by real, trusted context** from your own data. RAG reduces hallucinations by anchoring LLM answers in your data, and not just its training set.
 
