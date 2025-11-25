@@ -1,14 +1,46 @@
 # Couchbase Shell AI Workshop
 ## From Simple Chat to RAG
 
-Welcome! In this workshop, you'll build an AI-powered application using Couchbase Shell, starting with a simple chat request and evolving it into a RAG (Retrieval-Augmented Generation) system.
+Welcome! In this workshop, you'll build an AI-powered application using Couchbase Shell, starting with a simple chat request and evolving it into a RAG (Retrieval-Augmented Generation) system.  
+
+---
+
+## Couchbase NoSQL Database Platform – Quick Recap 
+Couchbase is a distributed NoSQL database that blends the flexibility of JSON document storage with the performance of a high-throughput, low-latency key-value store. It supports seamless scale-out, automatic sharding, and built-in replication, making it well-suited for AI-driven applications that require fast access to diverse, unstructured data.
+For Retrieval-Augmented Generation (RAG), Couchbase provides:  
+
+<img src="images/CBDifferentiatedArch.png" width="900" alt="Org settings screenshot">  
+
+- **Flexible JSON Document Model** : Store semi-structured and unstructured data without rigid schemas, ideal for knowledge bases and AI-ready content.
+- **High-performance Key-Value Engine** : Sub-millisecond reads/writes enable responsive retrieval pipelines and efficient vector lookups.
+- **SQL++ Query Language** : SQL-for-JSON support allows expressive queries, joins, and filtering, enabling hybrid RAG workflows combining metadata, text, and vector similarity.
+- **Integrated Vector Search** : Built into the Search Service, enabling high-dimensional vector indexing and similarity search directly in the database. This eliminates the need for external vector stores and provides hybrid search (vector + keyword + filters).
+- **Full-Text Search (FTS)** : Tokenization, analyzers, fuzzy search, and scoring support help augment vector similarity with lexical relevance for improved retrieval accuracy.
+- **Vector Search** : Couchbase integrates Vector Search to power AI-driven applications by enabling semantic and similarity-based queries on unstructured data. It stores and indexes high-dimensional embeddings alongside JSON documents, allowing hybrid queries that combine traditional attributes with vector similarity. Built on a distributed architecture. Developers can use SQL++ for hybrid queries and integrate with popular ML frameworks for embedding generation. 
+- **Eventing & Functions** : Built-in serverless compute capabilities allow data transformation, embeddings generation triggers, and pipeline automation.
+- **Enterprise Analytics** : empowers organizations with real-time, scalable analytics by combining operational and analytical workloads in a single platform. The platform supports high-performance indexing, event-driven architectures, and streaming data pipelines, enabling enterprises to analyze customer behavior, operational metrics, and IoT data without ETL delays.
+- **Couchbase Mobile** : provides an offline-first architecture through Couchbase Lite and Sync Gateway, ensuring reliable data sync between edge devices and the cloud. It supports peer-to-peer synchronization, end-to-end encryption, and automatic conflict resolution, making it perfect for industries with intermittent connectivity like retail, healthcare, and logistics. 
+- **Scalable Architecture** : Independent scaling of Data, Query, Index, Search, and Analytics services provides predictable performance for both transactional and AI workloads.
+
+Together, these capabilities enable Couchbase to serve as both the system of record and the vector-aware retrieval engine in modern RAG architectures, simplifying deployment and reducing operational complexity.  
+
+---
+## Reference Architecture  
+Here we have a reference architecture for Retrieval Augmented Generation (RAG). What RAG does is to boost content quality by integrating relevant information in real time.  
+<details><summary>👀 Click to view the referemce architecture</summary><img src="images/RAGRefArch.png" width="900" alt="Org settings screenshot"></details>
+
+When a user asks a question, it’s turned into vector embeddings and Couchbase retrieves the most relevant matches. These vector embeddings are then used in a query in the query service, which internally uses the index service to retrieve the top k-nearest neighbors (kNN), typically semantically similar documents. Instead of returning them directly, those results are passed along with the original question to a large language model. The LLM uses both pieces -your data and the query- to generate a grounded, factual response.  
+
+These documents are relevant and they can provide relative knowledge from the search results: the hallucination of LLM (delivering irrelevant information) is greatly reduced, because we’re biasing it with data directly derived from our own vector search results.  
+
+💡 Key Benefit: The LLM the model isn’t just guessing; it’s **guided by real, trusted context** from your own data. RAG reduces hallucinations by anchoring LLM answers in your data, and not just its training set.
 
 ---
 
 ## What You'll Build
 
 By the end of this workshop, you'll have:
-1. A working connection to OpenAI's API
+1. A working connection to the selected LLM API (OpenAI or Gemini)
 2. A Couchbase Capella database with vector search
 3. A simple chat application
 4. A RAG system that enhances responses with your own data
@@ -23,57 +55,83 @@ In this section, you'll install all the necessary tools and set up your accounts
 
 ### Step 1.1: Install Couchbase Shell
 
-We'll start by installing Couchbase Shell, which will be your command-line interface for interacting with both Couchbase and OpenAI throughout this workshop.
+We'll start by installing Couchbase Shell, which will be your command-line interface for interacting with both Couchbase and LLMs (OpenAI/Gemini) throughout this workshop.
 
 **macOS:**
 ```bash
 brew install couchbase-shell
 ```
 
+> [!NOTE]
+> Alternatively you can also download the appropriate ZIP file from one of the following links and extract in a folder, to run couchbase-shell directly from that folder:  
+> - MacOS Intel (x86/x64): https://github.com/couchbaselabs/couchbase-shell/releases/download/v1.0.0/cbsh-x86_64-apple-darwin.zip
+> - MacOS Apple Silicon: https://github.com/couchbaselabs/couchbase-shell/releases/download/v1.0.0/cbsh-aarch64-apple-darwin.zip
+
 **Linux:**
+- Download the latest Linux release from following links
+ - For **Linux x86/64**
 ```bash
-# Download the latest release
 wget https://github.com/couchbaselabs/couchbase-shell/releases/download/v1.1.0/cbsh-x86_64-unknown-linux-gnu.tar.gz
 tar -xzf cbsh-x86_64-unknown-linux-gnu.tar.gz
 sudo mv cbsh /usr/local/bin/
 ```
 
-**Windows:**
-```powershell
-# Download from GitHub releases
-# https://github.com/couchbaselabs/couchbase-shell/releases/download/v1.1.0/cbsh-x86_64-pc-windows-msvc.zip
-# Extract and add to PATH
+ - For **Linux aarch64**
+```bash
+wget https://github.com/couchbaselabs/couchbase-shell/releases/download/v1.0.0/cbsh-aarch64-unknown-linux-gnu.tar.gz
+tar -xzf cbsh-x86_64-unknown-linux-gnu.tar.gz
+sudo mv cbsh /usr/local/bin/
 ```
 
-Verify installation:
+**Windows:**
+1. Download from GitHub releases
+- https://github.com/couchbaselabs/couchbase-shell/releases/download/v1.1.0/cbsh-x86_64-pc-windows-msvc.zip
+2. Extract and add to PATH
+
+
+Verify the Couchbase Shell installation with `--version` parameter:
 ```bash
 cbsh --version
 ```
 #### Step 1.2: Setup your AI API Key
 
-Next, you'll create an AI API Key. This key allows your applications to access LLMs APIs to generate embeddings(vector representation of your content), and to start chat conversation. Right now [Couchbase Shell is compatible with OpenAI, Gemini and Bedrocks](https://couchbase.sh/docs/#_cb_env_llm).
+Next, you'll create an AI API Key. This key allows your applications to access LLMs APIs to generate embeddings(vector representation of your content), and to start chat conversation. Right now [Couchbase Shell is compatible with OpenAI, Gemini and Amazon Bedrock](https://couchbase.sh/docs/#_cb_env_llm).
 
-#### Step 1.2.1: Get Your OpenAI API Key
+#### Step 1.2.1 Get Your API Key for LLMs (#get-api-key)
 
-To Create an OpenAI Key:
+In this workshop you can utilize API keys from one of the following LLM vendors: 
+- **OpenAI** (which might need a paid subscription), or
+- **Gemini** (no paid subscription is needed, if you have a Google account and create API key on AIStudio)
 
-1. Go to https://platform.openai.com/api-keys
+##### Alternative 1: Get Your OpenAI API Key
+To Create an OpenAI API Key follow the following steps (a paid subscription might be needed):
+
+1. Go to [https://platform.openai.com/api-keys](https://platform.openai.com/api-keys)
 2. Sign up or log in
 3. Click "Create new secret key"
 4. Copy your key (starts with `sk-`)
 
-**Set your OpenAI API key:**
+##### Alternative 2: Get Your Gemini API Key
+To Create a Gemini API Key follow the following steps (a paid subscription might be needed):
+
+1. Go to [https://aistudio.google.com/api-keys](https://aistudio.google.com/api-keys)
+2. Sign up or log in
+3. Click "Create API key"
+4. Copy your key
+
+**Set your LLM API key:**  
+Now you set your API key as environment variable  
+- macOS/Linux
 ```bash
-# macOS/Linux
-export OPENAI_API_KEY="sk-your-key-here"
+export LLM_API_KEY="your-API-key-here"
 ```
 
+- Windows PowerShell
 ```bash
-# Windows PowerShell
-$env:OPENAI_API_KEY="sk-your-key-here"
+$env:LLM_API_KEY="your-API-key-here"
 ```
 > [!IMPORTANT]
-> Keep your key around: as we will also copy-paste it in Couchbase Shell's configuration later on.
+> Keep your key around: as we will also use it in Couchbase Shell's configuration later on.
 
 
 ### Step 1.3: Set Up Couchbase Capella Free Tier
@@ -85,8 +143,8 @@ Now you'll create a free tier cloud database cluster. Couchbase Capella is a ful
 3. Click "Create Cluster"
 4. Select **Free Tier** (Capella Trial)
 5. Choose a region close to you
-6. Name your cluster (e.g., "rag-workshop")
-7. Wait 2-3 minutes for provisioning
+6. Name your cluster: `rag-workshop`
+7. Wait a few minutes for provisioning
 
 ### Step 1.4: Configure Database Access
 
@@ -126,17 +184,19 @@ In this section, you'll connect your local Couchbase Shell to your cloud databas
 
 Let's add the Couchbase Capella API Key and the LLM Configuration. `yourOrgIdentifier` can be whatever you want. It will be used later on to associate an API key with a cluster configuration. 
 
-1. create a folder named `.cbsh` in the same folder, where Couchbase Shell executable will be run, or in your home directory like `~/.cbsh/`
-2. open/create `~/.cbsh/config` and edit this file with the following content:
+1. create a folder named `.cbsh`  
+1.1 if you installed Couchbase Shell by unzipping into a folder, you need to create the `.cbsh` folder in the same folder as Couchbase Shell application.
+2. create `config` file and edit this configuration file with the following content according to your API key choice made in [Step 1.2.1](#get-api-key):
 
+##### Alternative 1: Config with OpenAI API Key
 ```
 version = 1
 
 [[capella-organization]]
-identifier = "yourOrgIdentifier"
+identifier = "rag-workshop"
 access-key = "yourAccessKey"
 secret-key = "yourSecretKey"
-default-project = "Trial - Project"
+default-project = "My First Project"
 
 [[llm]]
 identifier = "OpenAI-small"
@@ -147,9 +207,29 @@ api_key = "sk-your-key"
 
 ```
 
+##### Alternative 2: Config with Gemini/AIStudio API Key
+```
+version = 1
+
+[[capella-organization]]
+identifier = "rag-workshop"
+access-key = "yourAccessKey"
+secret-key = "yourSecretKey"
+default-project = "My First Project"
+
+[[llm]]
+identifier = "Gemini-small"
+provider = "Gemini"
+embed_model = "models/text-embedding-004"
+chat_model = "gemini-2.5-flash-lite"
+api_key = "your-API-key"
+
+```
+
 > [!NOTE]
-> 1. The value of `identifier` key in this config file will also be used in step 2.3
-> 2. Replace `yourAccessKey` and `yourSecretKey` with API Key's values, which have been created in step 1.4
+> 1. Replace `yourAccessKey` and `yourSecretKey` with API Key's values, which have been created in Step 1.4
+> 2. Replace `default-project` value, **only if you set this to another value during the creation of your Free Tier Capella cluster**
+> 3. Replace `your-API-Key` with your selected LLM's API key
 
 
 ### Step 2.2: Start Couchbase Shell
@@ -171,6 +251,26 @@ You should see the Couchbase Shell prompt:
 >
 ```
 
+Just after starting couchbase-shell, if you see a warning, that a plugin could not be found, you can ignore it.  
+
+Now run the following simple command, to list the projects in your newly created Free Tier Capella cluster:
+```nushell
+projects
+```
+
+This command shall list the projects without an error:
+```nushell
+╭───┬──────────────────┬──────────────────────────────────────╮
+│ # │       name       │                  id                  │
+├───┼──────────────────┼──────────────────────────────────────┤
+│ 0 │ My First Project │ 19668563-3876-431d-a255-04c7138616db │
+╰───┴──────────────────┴──────────────────────────────────────╯
+```
+> [!WARNING]
+> If couchbase-shell could not connect to the cluster, the `projects` command cannot list the available projects and return an error message. In this case:  
+> 1. either check where your config file is saved (i.e. whether couchbase-shell has access to the config file)
+> 2. or check the values in your `config` file (especially the project name and API keys)
+
 
 ### Step 2.3: Register Your Capella Cluster
 
@@ -178,7 +278,6 @@ You'll now tell Couchbase Shell how to connect to your cloud cluster by providin
 
 Select the Capella project you will be working on:
 ```nushell
-# Select a Project
 projects | cb-env project $in.0.name
 ```
 
@@ -196,59 +295,88 @@ We can assign the name our Free Tier cluster by running:
 let cluster_name = clusters | $in.0.name
 ```
 
-This variable will be accessible with `$cluster_name` until you exit Couchbase Shell.
+This variable will be accessible with `$cluster_name` until you exit Couchbase Shell.  
 
-The following command allows you to register the cluster:
+#### Step 2.3.1: Defining Variables to utilize in further steps
+At this point let's define further variables, in order to be able to access via variable names.  
+You can edit the values for your needs:
 
+- Bucket Name
+```nushell
+let bucket_name = "chat_data"
+```
+
+- Scope Name
+```nushell
+let scope_name = "workshop"
+```
+
+- Collection Name
+```nushell
+let collection_name = "knowledge_base"
+```
+
+- API User Name
+```nushell
+let user_name = "workshop_user"
+```
+
+- API User Password
 > [!NOTE]
-> Please be sure that the parameter `--capealla-organization` has the same value with the `identifier` key, which you've already defined in your config file in step 2.1
+> The password must contain an uppercase letter, lowercase letter, number and special character, and has to be minimum 8 chars long.
+```nushell
+let user_pwd = "yourPassword123!"
+```
+
+#### Step 2.3.2: Registering Free Tier Capella Cluster
+The following command allows you to register the cluster into the config file:
 
 ```nushell
-# Register your cluster
-( clusters get $cluster_name | cb-env register $cluster_name $in."connection string"
-  --capella-organization "yourOrgIdentifier"
+clusters get $cluster_name | cb-env register $cluster_name $in."connection string"
+  --capella-organization "rag-workshop"
   --project (projects | $in.0.name)
-  --default-bucket chat_data
-  --default-scope workshop
-  --default-collection knowledge_base
-  --username workshop_user 
-  --password yourPassword123!
-  --save  )
+  --default-bucket $bucket_name
+  --default-scope $scope_name
+  --default-collection $collection_name
+  --username $user_name 
+  --password $user_pwd
+  --save  
 ```
 ```nushell
 cb-env cluster $cluster_name
 ```
-
-> [!NOTE]
-> Replace:
-> `your-password` with the password you will create (yes we are setting up the connection before creating the user, and it must contain an uppercase letter, lowercase letter, number and special character, and minimum 8 chars long.)
 
 ### Step 2.4: Create the User
 
 With an active Project and Cluster, we can create the cluster user. 
 
 ```nushell
-credentials create --read  --write --username workshop_user --password yourPassword123!
+credentials create --read  --write --username $user_name --password $user_pwd
 ```
 
 ### Step 2.5: Create Scope and Collection
 
 You'll create a logical organization for your data. Think of a scope as a database and a collection as a table - this is where your documents will be stored.
 
+- Create a bucket for our project
 ```nushell
-# Create a bucket for our project
-buckets create chat_data 1024
+buckets create $bucket_name 1024
 ```
+
+- Create a scope for our project
 ```nushell
-# Create a scope for our project
-scopes create --bucket chat_data workshop
+scopes create --bucket $bucket_name $scope_name
 ```
+
+- Create a collection for documents
 ```nushell
-# Create a collection for documents
-collections create --bucket chat_data --scope workshop knowledge_base
+collections create --bucket $bucket_name --scope $scope_name $collection_name
 ```
 
 At this point you can run `cb-env` to get an overview of your current context. The commands you will run will refer to these unless specified otherwise.
+```nushell
+cb-env
+```
 
 ## Part 3: Your First Chat Request
 
@@ -256,31 +384,35 @@ This is where the fun begins! You'll run your first commands to interact with Op
 
 ### Step 3.1: Create a Simple Chat Function
 
-Ask OpenAI a question about Couchbase and see what it knows from its training data.
+Ask LLM (OpenAI or Gemini) a simple question about Couchbase and see what it knows from its training data.
 
 ```nushell
-# Ask a simple question
 ask "What is Couchbase?"
 ```
 
-You should see a response from OpenAI!
+You should see a response from your choice of LLM (OpenAI or Gemini)!
 
 ### Step 3.3: Try More Questions
 
 You'll experiment with different questions to understand the limitations of a basic chat system - it only knows what was in its training data and can't access your specific information.
 
+- Now ask about databases
 ```nushell
-# Ask about databases
 ask "Explain what a document database is in simple terms"
+```
 
-# Ask about vector search
+- Ask about vector search
+```nushell
 ask "What is vector search used for?"
+```
 
-# Ask something OpenAI doesn't know
+- Ask something OpenAI doesn't know
+```nushell
 ask "What are the latest features in Couchbase 8.0"
 ```
 
-**Notice**: OpenAI might not have specific, up-to-date information about Couchbase features. This is where RAG helps!
+> [!NOTE]
+> LLM (OpenAI or Gemini) might not have the specific, up-to-date information about the latest Couchbase features, which were recently introduced with v8.0. This is where "**RAG** helps!
 
 ---
 
@@ -290,15 +422,17 @@ Now you'll start building your knowledge base. You'll add documents with informa
 
 ### Step 4.1: Add Knowledge to Your Database
 
-You'll insert five documents containing information about Couchbase features. This is your custom knowledge that the AI doesn't have in its training data.
+You'll insert a few documents containing information about Couchbase features. This is your custom knowledge that the AI doesn't have in its training data.
 
 Let's add some documents about Couchbase features:
 
+- Now let's create our first document on Couchbase Platform changes, which are coming with v8.0. These are very new information, for which LLM's referenced embedding model was trained yet
 ```nushell
-# Document 1: Platform changes
 doc upsert doc1 {title: "Platform Support Changes", category: "platform", text: "Couchbase Server 8.0 adds support for Alma Linux 10, Debian Linux 13, macOS 15 (Sequoia, development only), Oracle Linux 10, RHEL 10, Rocky Linux 10, and Windows Server 2025. It also drops support for Amazon Linux 2, macOS 12 (Monterey), SLES 12, Ubuntu 20.04 LTS, and Windows 10/Server 2019."}
+```
 
-# Document 2: GSI Vectors
+- The second document shal have information on the new Vector Indexes (Hyperscale and Composite Vector indexes), which have been introduces with v8.0
+```nushell
 doc upsert doc2 {title: "GSI Vector Indexes", category: "features", text: "Couchbase Server 8.0 introduces Hyperscale Vector indexes and Composite Vector indexes in the Index Service, enabling vector-search workloads (e.g., for AI applications). Hyperscale supports single vector column for very large datasets; Composite supports one vector plus scalar filters for hybrid vector+scalar queries, alongside existing Search Vector indexes."}
 ```
 
@@ -319,10 +453,14 @@ You should see a similar response as following:
 ╰──────────────────────────┴────────╯
 ```
 
-Creating documents manually can be a painful process. A bulk import is also available and can be run like this:
+Creating documents manually can be a timely process. A bulk import is also available and can be run like this:
+> [!IMPORTANT]
+> Download the `features.json` from Github repo onto your notebook (for unzipped installation of Couchbase Shell: into the same folder as Couchbase Shell application)
+
 ```nushell
-doc import  features.json
+doc import features.json
 ```
+
 
 Response will be shown as follows:
 ```
@@ -333,10 +471,10 @@ Response will be shown as follows:
 ╰───┴───────────┴─────────┴────────┴────────────────┴────────────────────╯
 ```
 
-As you can see it failed because no id were provider. We can easily generate one like so:
+As you can see it failed, because no unique IDs for the keys were provided. We can easily generate random unique IDs for the key/value pairs in the JSON like this:
 
 ```nushell
-open features.json | each { |x| $x| insert id (random uuid)} | save  features_with_id.json
+open features.json | each { |x| $x| insert id (random uuid)} | save features_with_id.json
 doc import --id-column id features_with_id.json
 ```
 
@@ -348,14 +486,14 @@ Response will be shown as follows:
 │ 0 │        30 │      30 │      0 │          │ fixedjohncreynolds │
 ╰───┴───────────┴─────────┴────────┴──────────┴────────────────────╯
 ```
-When you open one of the documents in the Capella Free Tier UI, you should see the **textVector** field with vector embeddings <details><summary>👀 Click to view screenshot</summary><img src="images/TextVectorField.png" width="900" alt="textVector Field screenshot"></details>
+> [!NOTE]
+> With this command you just imported 30 additional documents (key/value pairs) with information on the newest Couchbase v8.0 features into your bucket
 
 ### Step 4.2: Verify Your Documents
 
-A quick check to make sure all your documents were successfully stored in Couchbase.
+A quick check to make sure all your documents were successfully stored in Couchbase. We can now run a SQL++ query on all documents:
 
 ```nushell
-# Query all documents
 query "SELECT text, title FROM chat_data.workshop.knowledge_base"
 ```
 
@@ -363,16 +501,20 @@ You should see all the documents!
 
 ### Step 4.3: Create Embeddings for Your Documents
 
-You'll a query that converts text into vector embeddings using OpenAI's embedding model. These vectors will allow you to search by meaning, not just keywords.
+You'll run following query and a command that converts text into vector embeddings using selected LLM's embedding model. These vectors will allow you to search by meaning, not just keywords.
 
-We can use `vector enrich-doc`, a Couchbase Shell built-in function that takes the field of a document and send it to OpenAI, gets a Vector back and add it to the doc. The new doc is then upserted.
+We use the command `vector enrich-doc <field-name>`, a Couchbase Shell built-in function that takes the field of the document and send it to LLM, gets Vector Embeddings back from LLM' embedding model and adds it to the documents as a new field by postfixing the field name with 'Vector' (i.e. `<field-name>Vector`). The new docs are then upserted (updated if doc is existing, inserted if doc is not existing).
 
 ```nushell
 query "SELECT meta().id, * FROM `chat_data`.`workshop`.`knowledge_base`"  | vector enrich-doc text | doc upsert
+```
+```nushell
 query "SELECT text, title FROM chat_data.workshop.knowledge_base" | explore
 ```
+> [!TIP]
+> The command `explore` shows all the documents with field name in a table, to close this table and to return back to nushell, click on `ESC` button
 
-If you explore the results, you will see each document have a `textVector` field containing vectors.
+If you explore the results, you will see, that each document now has a `textVector` field containing vector embeddings, which were created from the `text` field of each document
 
 ---
 
@@ -382,14 +524,30 @@ Here you'll configure Couchbase to perform vector search. You'll create a specia
 
 ### Step 5.1: Create a Search Index with Vector Field
 
-You'll create a search index that can handle both text and vector fields. This is what powers semantic search in your RAG system.
+You'll create a search index that can handle both text and vector fields. This is what powers semantic search in your **RAG** system.
+Create a search index with vector support:
 
+> [!IMPORTANT]
+> The dimensions of Vector Embeddings varies according to your API key choice made in Step 1.2.1
+
+- for the OpenAI chat and embedding models in the configuration file, we need to set 1536 dimensions for vector embeddings:  
 ```nushell
-# Create a search index with vector support
 vector create-index knowledge_base_idx textVector 1536
 ```
 
-**Note**: The index takes 30-60 seconds to build. You can check status with:
+- for Gemini/AIStudio API key, we need to set 768 dimensions for vector embeddings::   
+```nushell
+vector create-index knowledge_base_idx textVector 768
+```
+
+> [!NOTE]
+> You need to select the correct combination of chat and embedding models from the LLM vendors, which must have the same dimensions for vector embeddings.  
+> In Couchbase, you can have up to 4096 dimensions for vector embeddings.
+
+When you open one of the documents in the Capella Free Tier UI, you should see the new `textVector` field with vector embeddings  
+<details><summary>👀 Click to view screenshot</summary><img src="images/TextVectorField.png" width="900" alt="textVector Field screenshot"></details>
+
+**Note**: The index could take 10-30 seconds to build. You can check status with:
 
 ```nushell
 query indexes
@@ -400,20 +558,22 @@ query indexes
 You'll run a search query that finds the most similar documents to your question. This is the core of RAG!
 
 ```nushell
-# Function to search using vectors
-let question = vector enrich-text "What are the latest features in Couchbase 8.0" 
+let question = vector enrich-text "What are the latest features in Couchbase 8.0"
+```
+
+Now let's run the function to search using vectors:
+```nushell
 vector search knowledge_base_idx textVector $question.content.vector.0 --neighbors 10
 ```
 You should see a list of 10 documents that are closest to the question in meaning, ranked by similarity.
 
 ### Step 5.3: Use RAG
 
-This is the main reason we are here, to ask a question and get a better answer thanks to RAG.
+This is the main reason we are here, to ask a question and get a better answer thanks to **RAG**.
 
 We run the search, use the result to fetch only the text field thanks to the `subdoc get` operation, select the content field and pass the rsult to the ask command. 
 
 ```nushell
-# Function to search using vectors
 vector search  knowledge_base_idx textVector $question.content.vector.0 --neighbors 10 | subdoc get text | select content | ask $question.content.text.0
 ```
 
@@ -423,11 +583,11 @@ The result is a precise answer to your questions thanks to the addition of relev
 
 ## Part 6: Build Your RAG System (10 minutes)
 
-This is the culmination of everything! You'll combine vector search with OpenAI chat to create a RAG system. When someone asks a question, you'll search your knowledge base, add relevant context to the prompt, and get accurate, informed responses.
+This is the culmination of everything! You'll combine vector search with LLM (OpenAI or Gemini) chat to create a RAG system. When someone asks a question, you'll search your knowledge base, add relevant context to the prompt, and get accurate, informed responses.
 
 ### Step 6.1: Wrap it up in a RAG function
 
-You will create a new Couchbase Shell/Nushell function that wraps up the search and ask part. Create a new file named **rag.nu** with the following content:
+You will create a new Couchbase Shell/Nushell function that wraps up the search and ask part. Create a new file named `rag.nu` with the following content:
 
 
 ```nushell
@@ -445,7 +605,7 @@ To use it, like most shell you can source it by running:
 source rag.nu 
 ```
 
-The `rag-ask` command should be available and usable like so:
+The `rag-ask` command should be available and is usable as follows:
 ```nushell
 rag-ask "What are the latest features in Couchbase 8.0"
 ```
@@ -476,50 +636,48 @@ These features collectively enhance performance, security, and usability of Couc
 
 This is the moment of truth! You'll ask the same question using both the regular chat function (from Part 3) and your new RAG function, and compare the results side-by-side.
 
-**First, try the original chat function:**
+**First, try the original chat function, i.e regular chat without RAG:**
 
 ```nushell
-# Regular chat without RAG
 ask "What is Couchbase Capella and what does the free tier include?"
 ```
 
-**Now try with RAG:**
+**Now try with RAG-enhanced chat:**
 
 ```nushell
-# RAG-enhanced chat
 rag-ask "What is Couchbase Capella and what does the free tier include?"
 ```
 
-**Compare the results!** The RAG version should provide specific details about the 50GB storage and 1GB RAM from your knowledge base.
+**Compare the results!** The RAG version should provide specific details about the 50GB storage and 1GB RAM from our knowledge base.
 
 ### Step 6.3: Try More Comparisons
 
 You'll test several more questions to really see the difference. The RAG version should consistently provide more accurate, specific information from your knowledge base.
 
+- Question about features with generic **LLM** (**OpenAI's ChatGPT or Gemini)**
 ```nushell
-# Question about features, ChatGPT
 ask "Tell me about Couchbase scopes and collections"
 ```
+- Question about features with specific **RAG**
 ```nushell
-# Question about features, RAG
 rag-ask "Tell me about Couchbase scopes and collections"
 ```
+- Question about vector search with generic **LLM** (**OpenAI's ChatGPT or Gemini)**
 ```nushell
-# Question about vector search, ChatGPT
 ask "How does vector search work in Couchbase?"
 ```
+- Question about vector search with specific **RAG**
 ```nushell
-# Question about vector search, RAG
 rag-ask "How does vector search work in Couchbase?"
 ```
 
 ---
 
 ## Part 7: Enhance Your RAG System (Bonus)
-
+> [!NOTE]
+> This bonus part works only with OpenAI API key
+   
 Want to take it further? These optional enhancements will make your RAG system more powerful by adding source citations and conversation memory.
-
-
 
 ### Step 7.1: Rewrite the RAG Functions
 
@@ -550,20 +708,20 @@ def chat [model, message, options] {
       temperature: 0.7
     };
     let json = $json | merge $options
-    let response = ( http post  -e -f $url $json --headers ["Authorization" $"Bearer ($env.OPENAI_API_KEY) " ]   --content-type "application/json")
+    let response = ( http post  -e -f $url $json --headers ["Authorization" $"Bearer ($env.LLM_API_KEY) " ]   --content-type "application/json")
     $response.body.choices.0.message.content
 }
 
 # Function to generate embeddings
 def generate-embedding [text: string, options] {
-  let api_key = $env.OPENAI_API_KEY
+  let api_key = $env.LLM_API_KEY
   let url = " https://api.openai.com/v1/embeddings" 
   let json = {
     model: "text-embedding-3-small",
     input: $text
   };
   let json = $json | merge $options
-  let response = ( http post  -e -f $url $json --headers ["Authorization" $"Bearer ($env.OPENAI_API_KEY) " ]   --content-type "application/json")
+  let response = ( http post  -e -f $url $json --headers ["Authorization" $"Bearer ($env.LLM_API_KEY) " ]   --content-type "application/json")
   $response.body.data.0.embedding
 }
 
